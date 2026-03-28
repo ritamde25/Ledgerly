@@ -1,5 +1,5 @@
 name: app
-description: "Responsive Flutter app to digitize credit tracking and billing workflows with intuitive UI/UX for small retailers"
+description: "Digitizing the traditional udhaar/khata system with a mobile app that enables shopkeepers to efficiently track credit transactions, reduce errors, and streamline billing."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev

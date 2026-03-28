@@ -5,7 +5,7 @@
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "Responsive Flutter app to digitize credit tracking and billing workflows with intuitive UI/UX for small retailers",
+    "description": "Digitizing the traditional udhaar/khata system with a mobile app that enables shopkeepers to efficiently track credit transactions, reduce errors, and streamline billing.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

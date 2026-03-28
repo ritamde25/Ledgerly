@@ -1,6 +1,6 @@
 # app
 
-Responsive Flutter app to digitize credit tracking and billing workflows with intuitive UI/UX for small retailers
+Digitizing the traditional udhaar/khata system with a mobile app that enables shopkeepers to efficiently track credit transactions, reduce errors, and streamline billing.
 
 ## Getting Started
 
