@@ -1,85 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'providers/app_state.dart';
-import 'screens/customers_screen.dart';
-import 'screens/billing_screen.dart';
-import 'screens/history_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'app.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Supabase
+  await Supabase.initialize(
+    url: 'https://wnulzdmcpyzyvtphegev.supabase.co',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndudWx6ZG1jcHl6eXZ0cGhlZ2V2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2ODg5ODEsImV4cCI6MjA5MDI2NDk4MX0.SNErS8tHateepqwA0_Sv7q2tDq3GR2MvwWsyFeA4UNg',
+  );
+
   runApp(
-    ChangeNotifierProvider(
-      create: (context) => AppState(),
-      child: const MyApp(),
+    const ProviderScope(
+      child: MyApp(),
     ),
   );
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Ledgerly',
-      theme: ThemeData(
-        primarySwatch: Colors.indigo,
-        useMaterial3: true,
-        appBarTheme: const AppBarTheme(
-          centerTitle: true,
-          elevation: 0,
-        ),
-      ),
-      home: const MainNavigation(),
-      debugShowCheckedModeBanner: false,
-    );
-  }
-}
-
-class MainNavigation extends StatefulWidget {
-  const MainNavigation({Key? key}) : super(key: key);
-
-  @override
-  State<MainNavigation> createState() => _MainNavigationState();
-}
-
-class _MainNavigationState extends State<MainNavigation> {
-  int _selectedIndex = 0;
-
-  final List<Widget> _screens = const [
-    CustomersScreen(),
-    BillingScreen(),
-    HistoryScreen(),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _screens,
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.people),
-            label: 'Customers',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.add_shopping_cart),
-            label: 'Billing',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.history),
-            label: 'History',
-          ),
-        ],
-      ),
-    );
-  }
 }
