@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import '../core/db/providers.dart';
 import '../core/db/drift_database.dart';
 import '../widgets/record_payment_dialog.dart';
@@ -8,7 +7,7 @@ import '../widgets/transaction_card.dart';
 import '../core/db/daos/transactions_dao.dart';
 
 class CustomerDetailsScreen extends ConsumerWidget {
-  final int customerId;
+  final String customerId;
 
   const CustomerDetailsScreen({Key? key, required this.customerId}) : super(key: key);
 

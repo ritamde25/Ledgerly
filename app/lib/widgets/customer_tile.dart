@@ -4,8 +4,19 @@ import '../screens/customer_details_screen.dart';
 
 class CustomerTile extends StatelessWidget {
   final Customer customer;
+  final bool showTrailing;
+  final bool showArrow;
+  final VoidCallback? onTap;
+  final EdgeInsets? margin;
 
-  const CustomerTile({super.key, required this.customer});
+  const CustomerTile({
+    super.key,
+    required this.customer,
+    this.showTrailing = true,
+    this.showArrow = true,
+    this.onTap,
+    this.margin,
+  });
 
   String _getInitials(String name) {
     List<String> names = name.trim().split(" ");
@@ -23,20 +34,26 @@ class CustomerTile extends StatelessWidget {
     return "+91 ${phone.substring(0, 5)} ${phone.substring(5)}";
   }
 
-  Color _getDeterministicColor(int id) {
+  Color _getDeterministicColor(String id) {
     final List<Color> modernColors = [
-      const Color(0xFF6366F1), // Indigo
-      const Color(0xFFEC4899), // Pink
-      const Color(0xFFF59E0B), // Amber
-      const Color(0xFF10B981), // Emerald
-      const Color(0xFF3B82F6), // Blue
-      const Color(0xFF8B5CF6), // Violet
-      const Color(0xFFF97316), // Orange
-      const Color(0xFF06B6D4), // Cyan
-      const Color(0xFF84CC16), // Lime
-      const Color(0xFFEF4444), // Red
+      const Color(0xFF6366F1),
+      const Color(0xFFEC4899),
+      const Color(0xFFF59E0B),
+      const Color(0xFF10B981),
+      const Color(0xFF3B82F6),
+      const Color(0xFF8B5CF6),
+      const Color(0xFFF97316),
+      const Color(0xFF06B6D4),
+      const Color(0xFF84CC16),
+      const Color(0xFFEF4444),
     ];
-    return modernColors[id % modernColors.length];
+
+    int hash = 0;
+    for (int i = 0; i < id.length; i++) {
+      hash = (hash * 31 + id.codeUnitAt(i)) & 0x7fffffff;
+    }
+
+    return modernColors[hash % modernColors.length];
   }
 
   @override
@@ -49,10 +66,10 @@ class CustomerTile extends StatelessWidget {
         ? const Color(0xFF10B981) // Emerald/Green
         : const Color(0xFFEF4444); // Red
 
-    final avatarColor = _getDeterministicColor(customer.id);
+    final avatarColor = _getDeterministicColor(customer.name + customer.phone);
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      margin: margin ?? const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -67,7 +84,7 @@ class CustomerTile extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () {
+          onTap: onTap ?? () {
             Navigator.push(
               context,
               MaterialPageRoute(
@@ -123,27 +140,30 @@ class CustomerTile extends StatelessWidget {
                     ],
                   ),
                 ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      isZero ? "PAID" : "₹${absDue.toStringAsFixed(0)}",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: statusColor,
+                if (showTrailing)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        isZero ? "PAID" : "₹${absDue.toStringAsFixed(0)}",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: statusColor,
+                        ),
                       ),
-                    ),
-                    Text(
-                      isNegative ? "Advance" : (isZero ? "No Due" : "Due"),
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: statusColor.withOpacity(0.7),
+                      Text(
+                        isNegative ? "Advance" : (isZero ? "No Due" : "Due"),
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: statusColor.withOpacity(0.7),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  )
+                else if (showArrow)
+                  const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Colors.grey),
               ],
             ),
           ),

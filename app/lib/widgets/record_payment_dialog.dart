@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' as drift;
+import 'package:uuid/uuid.dart';
 import '../core/db/providers.dart';
 import '../core/db/drift_database.dart';
 import '../core/auth/auth_provider.dart';
+import '../services/sync_service.dart';
 
 class RecordPaymentDialog {
   static void show(BuildContext context, WidgetRef ref, Customer customer) {
@@ -97,12 +99,14 @@ class RecordPaymentDialog {
                   final customersDao = ref.read(customersDaoProvider);
                   final transactionsDao = ref.read(transactionsDaoProvider);
                   final user = ref.read(userProvider);
+                  const uuid = Uuid();
 
                   // Update debt
                   await customersDao.updateCustomerDebt(customer.id, -amount);
                   
                   // Record as a transaction
                   await transactionsDao.insertTransaction(TransactionsCompanion.insert(
+                    id: uuid.v4(),
                     customerId: customer.id,
                     itemsJson: [], // Empty items list signifies a payment
                     totalAmount: amount,

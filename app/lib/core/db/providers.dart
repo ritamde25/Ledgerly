@@ -28,7 +28,7 @@ final customersStreamProvider = StreamProvider<List<Customer>>((ref) {
   return ref.watch(customersDaoProvider).watchAllCustomers();
 });
 
-final customerProvider = StreamProvider.family<Customer?, int>((ref, id) {
+final customerProvider = StreamProvider.family<Customer?, String>((ref, id) {
   return ref.watch(customersDaoProvider).watchCustomerById(id);
 });
 
@@ -86,7 +86,7 @@ final allTransactionsStreamProvider = StreamProvider<List<TransactionWithCustome
   return ref.watch(transactionsDaoProvider).watchAllTransactionsWithCustomer(limit: 50);
 });
 
-final customerTransactionsProvider = StreamProvider.family<List<Transaction>, int>((ref, customerId) {
+final customerTransactionsProvider = StreamProvider.family<List<Transaction>, String>((ref, customerId) {
   return ref.watch(transactionsDaoProvider).watchTransactionsForCustomer(customerId);
 });
 

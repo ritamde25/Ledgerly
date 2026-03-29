@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/db/providers.dart';
-import '../core/db/drift_database.dart';
 import '../widgets/customer_tile.dart';
 import '../widgets/add_customer_dialog.dart';
 
