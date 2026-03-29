@@ -23,7 +23,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 3; // Bumped version for updatedAt
+  int get schemaVersion => 4; // Bumped for ID schema changes (int → TEXT)
 
   @override
   MigrationStrategy get migration {
@@ -41,6 +41,14 @@ class AppDatabase extends _$AppDatabase {
         }
         if (from < 3) {
           await m.addColumn(baseInventoryItems, baseInventoryItems.updatedAt);
+        }
+        if (from < 4) {
+          // Migration: Change customer and transaction IDs from INT to TEXT
+          // Drop old tables and recreate with new schema
+          await m.deleteTable('transactions');
+          await m.deleteTable('customers');
+          await m.createTable(customers);
+          await m.createTable(transactions);
         }
       },
     );

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
+import 'package:drift/drift.dart' as drift;
 import '../core/db/providers.dart';
 import '../core/db/drift_database.dart';
 
@@ -130,7 +132,9 @@ class _AddCustomerDialogState extends ConsumerState<AddCustomerDialog> {
               onPressed: () async {
                 if (_formKey.currentState!.validate()) {
                   final dao = ref.read(customersDaoProvider);
+                  const uuid = Uuid();
                   await dao.insertCustomer(CustomersCompanion.insert(
+                    id: uuid.v4(),
                     name: _nameController.text,
                     phone: _phoneController.text,
                   ));

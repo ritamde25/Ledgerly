@@ -4,14 +4,18 @@ import 'customers_table.dart';
 import '../models/item.dart';
 
 class Transactions extends Table {
-  IntColumn get id => integer().autoIncrement()();
-  IntColumn get customerId => integer().references(Customers, #id)();
+  TextColumn get id => text()(); // Changed from autoIncrement to TEXT for UUID support
+  TextColumn get customerId => text()(); // Changed from foreign key reference to TEXT
   TextColumn get itemsJson => text().map(const ItemsConverter())(); 
   RealColumn get totalAmount => real()();
   DateTimeColumn get timestamp => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)(); // Track when created locally
 
   TextColumn get userId => text().nullable()();
   BoolColumn get isSynced => boolean().withDefault(Constant(false))();
+
+  @override
+  Set<Column> get primaryKey => {id};
 }
 
 class ItemsConverter extends TypeConverter<List<Item>, String> {

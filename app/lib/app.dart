@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'screens/home_screen.dart';
 import 'screens/customers_screen.dart';
 import 'screens/history_screen.dart';
@@ -9,10 +10,17 @@ import 'core/db/providers.dart';
 import 'core/auth/auth_provider.dart';
 
 class MyApp extends ConsumerWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Listen to auth state to remove splash screen once initialized
+    ref.listen(authStateProvider, (previous, next) {
+      if (next.hasValue) {
+        FlutterNativeSplash.remove();
+      }
+    });
+
     final user = ref.watch(userProvider);
 
     return MaterialApp(
@@ -47,8 +55,8 @@ class MyApp extends ConsumerWidget {
           labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
           height: 70,
           elevation: 10,
-          labelTextStyle: MaterialStateProperty.resolveWith((states) {
-            if (states.contains(MaterialState.selected)) {
+          labelTextStyle: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
               return const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
@@ -62,8 +70,8 @@ class MyApp extends ConsumerWidget {
               color: Color(0xFF6B7280),
             );
           }),
-          iconTheme: MaterialStateProperty.resolveWith((states) {
-            if (states.contains(MaterialState.selected)) {
+          iconTheme: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
               return const IconThemeData(
                 color: Color(0xFF4F46E5),
                 size: 26,

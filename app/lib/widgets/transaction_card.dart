@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../core/db/daos/transactions_dao.dart';
+import '../screens/bill_summary_screen.dart';
 
 class TransactionCard extends StatelessWidget {
   final TransactionWithCustomer transactionWithCustomer;
@@ -45,7 +46,16 @@ class TransactionCard extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: () {
-            // Optional: Show transaction details
+            if (!isPayment) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => BillSummaryScreen(
+                    transactionWithCustomer: transactionWithCustomer,
+                  ),
+                ),
+              );
+            }
           },
           borderRadius: BorderRadius.circular(20),
           child: Padding(

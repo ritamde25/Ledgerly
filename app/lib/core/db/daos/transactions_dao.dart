@@ -44,12 +44,16 @@ class TransactionsDao extends DatabaseAccessor<AppDatabase> with _$TransactionsD
     });
   }
 
-  Stream<List<Transaction>> watchTransactionsForCustomer(int customerId) {
+  Stream<List<Transaction>> watchTransactionsForCustomer(String customerId) {
     return (select(transactions)
           ..where((t) => t.customerId.equals(customerId))
           ..orderBy([(t) => OrderingTerm(expression: t.timestamp, mode: OrderingMode.desc)]))
         .watch();
   }
 
-  Future<int> insertTransaction(TransactionsCompanion transaction) => into(transactions).insert(transaction);
+  Future<void> insertTransaction(TransactionsCompanion transaction) => into(transactions).insert(transaction);
+
+  Future<void> updateTransaction(Transaction transaction) {
+    return update(transactions).replace(transaction.copyWith(isSynced: false));
+  }
 }

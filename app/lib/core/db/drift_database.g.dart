@@ -11,13 +11,9 @@ class $CustomersTable extends Customers
   $CustomersTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
       'id', aliasedName, false,
-      hasAutoIncrement: true,
-      type: DriftSqlType.int,
-      requiredDuringInsert: false,
-      defaultConstraints:
-          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+      type: DriftSqlType.string, requiredDuringInsert: true);
   static const VerificationMeta _nameMeta = const VerificationMeta('name');
   @override
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
@@ -66,6 +62,8 @@ class $CustomersTable extends Customers
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
     }
     if (data.containsKey('name')) {
       context.handle(
@@ -101,7 +99,7 @@ class $CustomersTable extends Customers
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return Customer(
       id: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
       name: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
       phone: attachedDatabase.typeMapping
@@ -122,7 +120,7 @@ class $CustomersTable extends Customers
 }
 
 class Customer extends DataClass implements Insertable<Customer> {
-  final int id;
+  final String id;
   final String name;
   final String phone;
   final double totalDue;
@@ -138,7 +136,7 @@ class Customer extends DataClass implements Insertable<Customer> {
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
+    map['id'] = Variable<String>(id);
     map['name'] = Variable<String>(name);
     map['phone'] = Variable<String>(phone);
     map['total_due'] = Variable<double>(totalDue);
@@ -165,7 +163,7 @@ class Customer extends DataClass implements Insertable<Customer> {
       {ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Customer(
-      id: serializer.fromJson<int>(json['id']),
+      id: serializer.fromJson<String>(json['id']),
       name: serializer.fromJson<String>(json['name']),
       phone: serializer.fromJson<String>(json['phone']),
       totalDue: serializer.fromJson<double>(json['totalDue']),
@@ -177,7 +175,7 @@ class Customer extends DataClass implements Insertable<Customer> {
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
+      'id': serializer.toJson<String>(id),
       'name': serializer.toJson<String>(name),
       'phone': serializer.toJson<String>(phone),
       'totalDue': serializer.toJson<double>(totalDue),
@@ -187,7 +185,7 @@ class Customer extends DataClass implements Insertable<Customer> {
   }
 
   Customer copyWith(
-          {int? id,
+          {String? id,
           String? name,
           String? phone,
           double? totalDue,
@@ -240,12 +238,13 @@ class Customer extends DataClass implements Insertable<Customer> {
 }
 
 class CustomersCompanion extends UpdateCompanion<Customer> {
-  final Value<int> id;
+  final Value<String> id;
   final Value<String> name;
   final Value<String> phone;
   final Value<double> totalDue;
   final Value<String?> userId;
   final Value<bool> isSynced;
+  final Value<int> rowid;
   const CustomersCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
@@ -253,23 +252,27 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
     this.totalDue = const Value.absent(),
     this.userId = const Value.absent(),
     this.isSynced = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   CustomersCompanion.insert({
-    this.id = const Value.absent(),
+    required String id,
     required String name,
     required String phone,
     this.totalDue = const Value.absent(),
     this.userId = const Value.absent(),
     this.isSynced = const Value.absent(),
-  })  : name = Value(name),
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        name = Value(name),
         phone = Value(phone);
   static Insertable<Customer> custom({
-    Expression<int>? id,
+    Expression<String>? id,
     Expression<String>? name,
     Expression<String>? phone,
     Expression<double>? totalDue,
     Expression<String>? userId,
     Expression<bool>? isSynced,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -278,16 +281,18 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
       if (totalDue != null) 'total_due': totalDue,
       if (userId != null) 'user_id': userId,
       if (isSynced != null) 'is_synced': isSynced,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
   CustomersCompanion copyWith(
-      {Value<int>? id,
+      {Value<String>? id,
       Value<String>? name,
       Value<String>? phone,
       Value<double>? totalDue,
       Value<String?>? userId,
-      Value<bool>? isSynced}) {
+      Value<bool>? isSynced,
+      Value<int>? rowid}) {
     return CustomersCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
@@ -295,6 +300,7 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
       totalDue: totalDue ?? this.totalDue,
       userId: userId ?? this.userId,
       isSynced: isSynced ?? this.isSynced,
+      rowid: rowid ?? this.rowid,
     );
   }
 
@@ -302,7 +308,7 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (id.present) {
-      map['id'] = Variable<int>(id.value);
+      map['id'] = Variable<String>(id.value);
     }
     if (name.present) {
       map['name'] = Variable<String>(name.value);
@@ -319,6 +325,9 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
     if (isSynced.present) {
       map['is_synced'] = Variable<bool>(isSynced.value);
     }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
     return map;
   }
 
@@ -330,7 +339,8 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
           ..write('phone: $phone, ')
           ..write('totalDue: $totalDue, ')
           ..write('userId: $userId, ')
-          ..write('isSynced: $isSynced')
+          ..write('isSynced: $isSynced, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -1252,22 +1262,15 @@ class $TransactionsTable extends Transactions
   $TransactionsTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
       'id', aliasedName, false,
-      hasAutoIncrement: true,
-      type: DriftSqlType.int,
-      requiredDuringInsert: false,
-      defaultConstraints:
-          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+      type: DriftSqlType.string, requiredDuringInsert: true);
   static const VerificationMeta _customerIdMeta =
       const VerificationMeta('customerId');
   @override
-  late final GeneratedColumn<int> customerId = GeneratedColumn<int>(
+  late final GeneratedColumn<String> customerId = GeneratedColumn<String>(
       'customer_id', aliasedName, false,
-      type: DriftSqlType.int,
-      requiredDuringInsert: true,
-      defaultConstraints:
-          GeneratedColumn.constraintIsAlways('REFERENCES customers (id)'));
+      type: DriftSqlType.string, requiredDuringInsert: true);
   static const VerificationMeta _itemsJsonMeta =
       const VerificationMeta('itemsJson');
   @override
@@ -1289,6 +1292,14 @@ class $TransactionsTable extends Transactions
       type: DriftSqlType.dateTime,
       requiredDuringInsert: false,
       defaultValue: currentDateAndTime);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
   static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
   @override
   late final GeneratedColumn<String> userId = GeneratedColumn<String>(
@@ -1305,8 +1316,16 @@ class $TransactionsTable extends Transactions
           GeneratedColumn.constraintIsAlways('CHECK ("is_synced" IN (0, 1))'),
       defaultValue: Constant(false));
   @override
-  List<GeneratedColumn> get $columns =>
-      [id, customerId, itemsJson, totalAmount, timestamp, userId, isSynced];
+  List<GeneratedColumn> get $columns => [
+        id,
+        customerId,
+        itemsJson,
+        totalAmount,
+        timestamp,
+        createdAt,
+        userId,
+        isSynced
+      ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -1319,6 +1338,8 @@ class $TransactionsTable extends Transactions
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
     }
     if (data.containsKey('customer_id')) {
       context.handle(
@@ -1341,6 +1362,10 @@ class $TransactionsTable extends Transactions
       context.handle(_timestampMeta,
           timestamp.isAcceptableOrUnknown(data['timestamp']!, _timestampMeta));
     }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
     if (data.containsKey('user_id')) {
       context.handle(_userIdMeta,
           userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta));
@@ -1359,9 +1384,9 @@ class $TransactionsTable extends Transactions
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return Transaction(
       id: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
       customerId: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}customer_id'])!,
+          .read(DriftSqlType.string, data['${effectivePrefix}customer_id'])!,
       itemsJson: $TransactionsTable.$converteritemsJson.fromSql(attachedDatabase
           .typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}items_json'])!),
@@ -1369,6 +1394,8 @@ class $TransactionsTable extends Transactions
           .read(DriftSqlType.double, data['${effectivePrefix}total_amount'])!,
       timestamp: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}timestamp'])!,
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
       userId: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}user_id']),
       isSynced: attachedDatabase.typeMapping
@@ -1386,11 +1413,12 @@ class $TransactionsTable extends Transactions
 }
 
 class Transaction extends DataClass implements Insertable<Transaction> {
-  final int id;
-  final int customerId;
+  final String id;
+  final String customerId;
   final List<Item> itemsJson;
   final double totalAmount;
   final DateTime timestamp;
+  final DateTime createdAt;
   final String? userId;
   final bool isSynced;
   const Transaction(
@@ -1399,19 +1427,21 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       required this.itemsJson,
       required this.totalAmount,
       required this.timestamp,
+      required this.createdAt,
       this.userId,
       required this.isSynced});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
-    map['customer_id'] = Variable<int>(customerId);
+    map['id'] = Variable<String>(id);
+    map['customer_id'] = Variable<String>(customerId);
     {
       map['items_json'] = Variable<String>(
           $TransactionsTable.$converteritemsJson.toSql(itemsJson));
     }
     map['total_amount'] = Variable<double>(totalAmount);
     map['timestamp'] = Variable<DateTime>(timestamp);
+    map['created_at'] = Variable<DateTime>(createdAt);
     if (!nullToAbsent || userId != null) {
       map['user_id'] = Variable<String>(userId);
     }
@@ -1426,6 +1456,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       itemsJson: Value(itemsJson),
       totalAmount: Value(totalAmount),
       timestamp: Value(timestamp),
+      createdAt: Value(createdAt),
       userId:
           userId == null && nullToAbsent ? const Value.absent() : Value(userId),
       isSynced: Value(isSynced),
@@ -1436,11 +1467,12 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       {ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Transaction(
-      id: serializer.fromJson<int>(json['id']),
-      customerId: serializer.fromJson<int>(json['customerId']),
+      id: serializer.fromJson<String>(json['id']),
+      customerId: serializer.fromJson<String>(json['customerId']),
       itemsJson: serializer.fromJson<List<Item>>(json['itemsJson']),
       totalAmount: serializer.fromJson<double>(json['totalAmount']),
       timestamp: serializer.fromJson<DateTime>(json['timestamp']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       userId: serializer.fromJson<String?>(json['userId']),
       isSynced: serializer.fromJson<bool>(json['isSynced']),
     );
@@ -1449,22 +1481,24 @@ class Transaction extends DataClass implements Insertable<Transaction> {
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
-      'customerId': serializer.toJson<int>(customerId),
+      'id': serializer.toJson<String>(id),
+      'customerId': serializer.toJson<String>(customerId),
       'itemsJson': serializer.toJson<List<Item>>(itemsJson),
       'totalAmount': serializer.toJson<double>(totalAmount),
       'timestamp': serializer.toJson<DateTime>(timestamp),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
       'userId': serializer.toJson<String?>(userId),
       'isSynced': serializer.toJson<bool>(isSynced),
     };
   }
 
   Transaction copyWith(
-          {int? id,
-          int? customerId,
+          {String? id,
+          String? customerId,
           List<Item>? itemsJson,
           double? totalAmount,
           DateTime? timestamp,
+          DateTime? createdAt,
           Value<String?> userId = const Value.absent(),
           bool? isSynced}) =>
       Transaction(
@@ -1473,6 +1507,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
         itemsJson: itemsJson ?? this.itemsJson,
         totalAmount: totalAmount ?? this.totalAmount,
         timestamp: timestamp ?? this.timestamp,
+        createdAt: createdAt ?? this.createdAt,
         userId: userId.present ? userId.value : this.userId,
         isSynced: isSynced ?? this.isSynced,
       );
@@ -1485,6 +1520,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       totalAmount:
           data.totalAmount.present ? data.totalAmount.value : this.totalAmount,
       timestamp: data.timestamp.present ? data.timestamp.value : this.timestamp,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       userId: data.userId.present ? data.userId.value : this.userId,
       isSynced: data.isSynced.present ? data.isSynced.value : this.isSynced,
     );
@@ -1498,6 +1534,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
           ..write('itemsJson: $itemsJson, ')
           ..write('totalAmount: $totalAmount, ')
           ..write('timestamp: $timestamp, ')
+          ..write('createdAt: $createdAt, ')
           ..write('userId: $userId, ')
           ..write('isSynced: $isSynced')
           ..write(')'))
@@ -1505,8 +1542,8 @@ class Transaction extends DataClass implements Insertable<Transaction> {
   }
 
   @override
-  int get hashCode => Object.hash(
-      id, customerId, itemsJson, totalAmount, timestamp, userId, isSynced);
+  int get hashCode => Object.hash(id, customerId, itemsJson, totalAmount,
+      timestamp, createdAt, userId, isSynced);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1516,46 +1553,56 @@ class Transaction extends DataClass implements Insertable<Transaction> {
           other.itemsJson == this.itemsJson &&
           other.totalAmount == this.totalAmount &&
           other.timestamp == this.timestamp &&
+          other.createdAt == this.createdAt &&
           other.userId == this.userId &&
           other.isSynced == this.isSynced);
 }
 
 class TransactionsCompanion extends UpdateCompanion<Transaction> {
-  final Value<int> id;
-  final Value<int> customerId;
+  final Value<String> id;
+  final Value<String> customerId;
   final Value<List<Item>> itemsJson;
   final Value<double> totalAmount;
   final Value<DateTime> timestamp;
+  final Value<DateTime> createdAt;
   final Value<String?> userId;
   final Value<bool> isSynced;
+  final Value<int> rowid;
   const TransactionsCompanion({
     this.id = const Value.absent(),
     this.customerId = const Value.absent(),
     this.itemsJson = const Value.absent(),
     this.totalAmount = const Value.absent(),
     this.timestamp = const Value.absent(),
+    this.createdAt = const Value.absent(),
     this.userId = const Value.absent(),
     this.isSynced = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   TransactionsCompanion.insert({
-    this.id = const Value.absent(),
-    required int customerId,
+    required String id,
+    required String customerId,
     required List<Item> itemsJson,
     required double totalAmount,
     this.timestamp = const Value.absent(),
+    this.createdAt = const Value.absent(),
     this.userId = const Value.absent(),
     this.isSynced = const Value.absent(),
-  })  : customerId = Value(customerId),
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        customerId = Value(customerId),
         itemsJson = Value(itemsJson),
         totalAmount = Value(totalAmount);
   static Insertable<Transaction> custom({
-    Expression<int>? id,
-    Expression<int>? customerId,
+    Expression<String>? id,
+    Expression<String>? customerId,
     Expression<String>? itemsJson,
     Expression<double>? totalAmount,
     Expression<DateTime>? timestamp,
+    Expression<DateTime>? createdAt,
     Expression<String>? userId,
     Expression<bool>? isSynced,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -1563,27 +1610,33 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
       if (itemsJson != null) 'items_json': itemsJson,
       if (totalAmount != null) 'total_amount': totalAmount,
       if (timestamp != null) 'timestamp': timestamp,
+      if (createdAt != null) 'created_at': createdAt,
       if (userId != null) 'user_id': userId,
       if (isSynced != null) 'is_synced': isSynced,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
   TransactionsCompanion copyWith(
-      {Value<int>? id,
-      Value<int>? customerId,
+      {Value<String>? id,
+      Value<String>? customerId,
       Value<List<Item>>? itemsJson,
       Value<double>? totalAmount,
       Value<DateTime>? timestamp,
+      Value<DateTime>? createdAt,
       Value<String?>? userId,
-      Value<bool>? isSynced}) {
+      Value<bool>? isSynced,
+      Value<int>? rowid}) {
     return TransactionsCompanion(
       id: id ?? this.id,
       customerId: customerId ?? this.customerId,
       itemsJson: itemsJson ?? this.itemsJson,
       totalAmount: totalAmount ?? this.totalAmount,
       timestamp: timestamp ?? this.timestamp,
+      createdAt: createdAt ?? this.createdAt,
       userId: userId ?? this.userId,
       isSynced: isSynced ?? this.isSynced,
+      rowid: rowid ?? this.rowid,
     );
   }
 
@@ -1591,10 +1644,10 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (id.present) {
-      map['id'] = Variable<int>(id.value);
+      map['id'] = Variable<String>(id.value);
     }
     if (customerId.present) {
-      map['customer_id'] = Variable<int>(customerId.value);
+      map['customer_id'] = Variable<String>(customerId.value);
     }
     if (itemsJson.present) {
       map['items_json'] = Variable<String>(
@@ -1606,11 +1659,17 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     if (timestamp.present) {
       map['timestamp'] = Variable<DateTime>(timestamp.value);
     }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
     if (userId.present) {
       map['user_id'] = Variable<String>(userId.value);
     }
     if (isSynced.present) {
       map['is_synced'] = Variable<bool>(isSynced.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
     }
     return map;
   }
@@ -1623,8 +1682,10 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
           ..write('itemsJson: $itemsJson, ')
           ..write('totalAmount: $totalAmount, ')
           ..write('timestamp: $timestamp, ')
+          ..write('createdAt: $createdAt, ')
           ..write('userId: $userId, ')
-          ..write('isSynced: $isSynced')
+          ..write('isSynced: $isSynced, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -1651,41 +1712,23 @@ abstract class _$AppDatabase extends GeneratedDatabase {
 }
 
 typedef $$CustomersTableCreateCompanionBuilder = CustomersCompanion Function({
-  Value<int> id,
+  required String id,
   required String name,
   required String phone,
   Value<double> totalDue,
   Value<String?> userId,
   Value<bool> isSynced,
+  Value<int> rowid,
 });
 typedef $$CustomersTableUpdateCompanionBuilder = CustomersCompanion Function({
-  Value<int> id,
+  Value<String> id,
   Value<String> name,
   Value<String> phone,
   Value<double> totalDue,
   Value<String?> userId,
   Value<bool> isSynced,
+  Value<int> rowid,
 });
-
-final class $$CustomersTableReferences
-    extends BaseReferences<_$AppDatabase, $CustomersTable, Customer> {
-  $$CustomersTableReferences(super.$_db, super.$_table, super.$_typedResult);
-
-  static MultiTypedResultKey<$TransactionsTable, List<Transaction>>
-      _transactionsRefsTable(_$AppDatabase db) =>
-          MultiTypedResultKey.fromTable(db.transactions,
-              aliasName: $_aliasNameGenerator(
-                  db.customers.id, db.transactions.customerId));
-
-  $$TransactionsTableProcessedTableManager get transactionsRefs {
-    final manager = $$TransactionsTableTableManager($_db, $_db.transactions)
-        .filter((f) => f.customerId.id($_item.id));
-
-    final cache = $_typedResult.readTableOrNull(_transactionsRefsTable($_db));
-    return ProcessedTableManager(
-        manager.$state.copyWith(prefetchedData: cache));
-  }
-}
 
 class $$CustomersTableFilterComposer
     extends Composer<_$AppDatabase, $CustomersTable> {
@@ -1696,7 +1739,7 @@ class $$CustomersTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<int> get id => $composableBuilder(
+  ColumnFilters<String> get id => $composableBuilder(
       column: $table.id, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get name => $composableBuilder(
@@ -1713,27 +1756,6 @@ class $$CustomersTableFilterComposer
 
   ColumnFilters<bool> get isSynced => $composableBuilder(
       column: $table.isSynced, builder: (column) => ColumnFilters(column));
-
-  Expression<bool> transactionsRefs(
-      Expression<bool> Function($$TransactionsTableFilterComposer f) f) {
-    final $$TransactionsTableFilterComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.id,
-        referencedTable: $db.transactions,
-        getReferencedColumn: (t) => t.customerId,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$TransactionsTableFilterComposer(
-              $db: $db,
-              $table: $db.transactions,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
-    return f(composer);
-  }
 }
 
 class $$CustomersTableOrderingComposer
@@ -1745,7 +1767,7 @@ class $$CustomersTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<int> get id => $composableBuilder(
+  ColumnOrderings<String> get id => $composableBuilder(
       column: $table.id, builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<String> get name => $composableBuilder(
@@ -1773,7 +1795,7 @@ class $$CustomersTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<int> get id =>
+  GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
   GeneratedColumn<String> get name =>
@@ -1790,27 +1812,6 @@ class $$CustomersTableAnnotationComposer
 
   GeneratedColumn<bool> get isSynced =>
       $composableBuilder(column: $table.isSynced, builder: (column) => column);
-
-  Expression<T> transactionsRefs<T extends Object>(
-      Expression<T> Function($$TransactionsTableAnnotationComposer a) f) {
-    final $$TransactionsTableAnnotationComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.id,
-        referencedTable: $db.transactions,
-        getReferencedColumn: (t) => t.customerId,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$TransactionsTableAnnotationComposer(
-              $db: $db,
-              $table: $db.transactions,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
-    return f(composer);
-  }
 }
 
 class $$CustomersTableTableManager extends RootTableManager<
@@ -1822,9 +1823,9 @@ class $$CustomersTableTableManager extends RootTableManager<
     $$CustomersTableAnnotationComposer,
     $$CustomersTableCreateCompanionBuilder,
     $$CustomersTableUpdateCompanionBuilder,
-    (Customer, $$CustomersTableReferences),
+    (Customer, BaseReferences<_$AppDatabase, $CustomersTable, Customer>),
     Customer,
-    PrefetchHooks Function({bool transactionsRefs})> {
+    PrefetchHooks Function()> {
   $$CustomersTableTableManager(_$AppDatabase db, $CustomersTable table)
       : super(TableManagerState(
           db: db,
@@ -1836,12 +1837,13 @@ class $$CustomersTableTableManager extends RootTableManager<
           createComputedFieldComposer: () =>
               $$CustomersTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback: ({
-            Value<int> id = const Value.absent(),
+            Value<String> id = const Value.absent(),
             Value<String> name = const Value.absent(),
             Value<String> phone = const Value.absent(),
             Value<double> totalDue = const Value.absent(),
             Value<String?> userId = const Value.absent(),
             Value<bool> isSynced = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
           }) =>
               CustomersCompanion(
             id: id,
@@ -1850,14 +1852,16 @@ class $$CustomersTableTableManager extends RootTableManager<
             totalDue: totalDue,
             userId: userId,
             isSynced: isSynced,
+            rowid: rowid,
           ),
           createCompanionCallback: ({
-            Value<int> id = const Value.absent(),
+            required String id,
             required String name,
             required String phone,
             Value<double> totalDue = const Value.absent(),
             Value<String?> userId = const Value.absent(),
             Value<bool> isSynced = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
           }) =>
               CustomersCompanion.insert(
             id: id,
@@ -1866,36 +1870,12 @@ class $$CustomersTableTableManager extends RootTableManager<
             totalDue: totalDue,
             userId: userId,
             isSynced: isSynced,
+            rowid: rowid,
           ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (
-                    e.readTable(table),
-                    $$CustomersTableReferences(db, table, e)
-                  ))
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
               .toList(),
-          prefetchHooksCallback: ({transactionsRefs = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [if (transactionsRefs) db.transactions],
-              addJoins: null,
-              getPrefetchedDataCallback: (items) async {
-                return [
-                  if (transactionsRefs)
-                    await $_getPrefetchedData(
-                        currentTable: table,
-                        referencedTable: $$CustomersTableReferences
-                            ._transactionsRefsTable(db),
-                        managerFromTypedResult: (p0) =>
-                            $$CustomersTableReferences(db, table, p0)
-                                .transactionsRefs,
-                        referencedItemsForCurrentItem:
-                            (item, referencedItems) => referencedItems
-                                .where((e) => e.customerId == item.id),
-                        typedResults: items)
-                ];
-              },
-            );
-          },
+          prefetchHooksCallback: null,
         ));
 }
 
@@ -1908,9 +1888,9 @@ typedef $$CustomersTableProcessedTableManager = ProcessedTableManager<
     $$CustomersTableAnnotationComposer,
     $$CustomersTableCreateCompanionBuilder,
     $$CustomersTableUpdateCompanionBuilder,
-    (Customer, $$CustomersTableReferences),
+    (Customer, BaseReferences<_$AppDatabase, $CustomersTable, Customer>),
     Customer,
-    PrefetchHooks Function({bool transactionsRefs})>;
+    PrefetchHooks Function()>;
 typedef $$BaseInventoryItemsTableCreateCompanionBuilder
     = BaseInventoryItemsCompanion Function({
   Value<int> id,
@@ -2550,42 +2530,28 @@ typedef $$InventoryItemsTableProcessedTableManager = ProcessedTableManager<
     PrefetchHooks Function({bool baseItemId})>;
 typedef $$TransactionsTableCreateCompanionBuilder = TransactionsCompanion
     Function({
-  Value<int> id,
-  required int customerId,
+  required String id,
+  required String customerId,
   required List<Item> itemsJson,
   required double totalAmount,
   Value<DateTime> timestamp,
+  Value<DateTime> createdAt,
   Value<String?> userId,
   Value<bool> isSynced,
+  Value<int> rowid,
 });
 typedef $$TransactionsTableUpdateCompanionBuilder = TransactionsCompanion
     Function({
-  Value<int> id,
-  Value<int> customerId,
+  Value<String> id,
+  Value<String> customerId,
   Value<List<Item>> itemsJson,
   Value<double> totalAmount,
   Value<DateTime> timestamp,
+  Value<DateTime> createdAt,
   Value<String?> userId,
   Value<bool> isSynced,
+  Value<int> rowid,
 });
-
-final class $$TransactionsTableReferences
-    extends BaseReferences<_$AppDatabase, $TransactionsTable, Transaction> {
-  $$TransactionsTableReferences(super.$_db, super.$_table, super.$_typedResult);
-
-  static $CustomersTable _customerIdTable(_$AppDatabase db) =>
-      db.customers.createAlias(
-          $_aliasNameGenerator(db.transactions.customerId, db.customers.id));
-
-  $$CustomersTableProcessedTableManager get customerId {
-    final manager = $$CustomersTableTableManager($_db, $_db.customers)
-        .filter((f) => f.id($_item.customerId));
-    final item = $_typedResult.readTableOrNull(_customerIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-        manager.$state.copyWith(prefetchedData: [item]));
-  }
-}
 
 class $$TransactionsTableFilterComposer
     extends Composer<_$AppDatabase, $TransactionsTable> {
@@ -2596,8 +2562,11 @@ class $$TransactionsTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<int> get id => $composableBuilder(
+  ColumnFilters<String> get id => $composableBuilder(
       column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get customerId => $composableBuilder(
+      column: $table.customerId, builder: (column) => ColumnFilters(column));
 
   ColumnWithTypeConverterFilters<List<Item>, List<Item>, String>
       get itemsJson => $composableBuilder(
@@ -2610,31 +2579,14 @@ class $$TransactionsTableFilterComposer
   ColumnFilters<DateTime> get timestamp => $composableBuilder(
       column: $table.timestamp, builder: (column) => ColumnFilters(column));
 
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
   ColumnFilters<String> get userId => $composableBuilder(
       column: $table.userId, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<bool> get isSynced => $composableBuilder(
       column: $table.isSynced, builder: (column) => ColumnFilters(column));
-
-  $$CustomersTableFilterComposer get customerId {
-    final $$CustomersTableFilterComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.customerId,
-        referencedTable: $db.customers,
-        getReferencedColumn: (t) => t.id,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$CustomersTableFilterComposer(
-              $db: $db,
-              $table: $db.customers,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
-    return composer;
-  }
 }
 
 class $$TransactionsTableOrderingComposer
@@ -2646,8 +2598,11 @@ class $$TransactionsTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<int> get id => $composableBuilder(
+  ColumnOrderings<String> get id => $composableBuilder(
       column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get customerId => $composableBuilder(
+      column: $table.customerId, builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<String> get itemsJson => $composableBuilder(
       column: $table.itemsJson, builder: (column) => ColumnOrderings(column));
@@ -2658,31 +2613,14 @@ class $$TransactionsTableOrderingComposer
   ColumnOrderings<DateTime> get timestamp => $composableBuilder(
       column: $table.timestamp, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<String> get userId => $composableBuilder(
       column: $table.userId, builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<bool> get isSynced => $composableBuilder(
       column: $table.isSynced, builder: (column) => ColumnOrderings(column));
-
-  $$CustomersTableOrderingComposer get customerId {
-    final $$CustomersTableOrderingComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.customerId,
-        referencedTable: $db.customers,
-        getReferencedColumn: (t) => t.id,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$CustomersTableOrderingComposer(
-              $db: $db,
-              $table: $db.customers,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
-    return composer;
-  }
 }
 
 class $$TransactionsTableAnnotationComposer
@@ -2694,8 +2632,11 @@ class $$TransactionsTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<int> get id =>
+  GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get customerId => $composableBuilder(
+      column: $table.customerId, builder: (column) => column);
 
   GeneratedColumnWithTypeConverter<List<Item>, String> get itemsJson =>
       $composableBuilder(column: $table.itemsJson, builder: (column) => column);
@@ -2706,31 +2647,14 @@ class $$TransactionsTableAnnotationComposer
   GeneratedColumn<DateTime> get timestamp =>
       $composableBuilder(column: $table.timestamp, builder: (column) => column);
 
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
   GeneratedColumn<String> get userId =>
       $composableBuilder(column: $table.userId, builder: (column) => column);
 
   GeneratedColumn<bool> get isSynced =>
       $composableBuilder(column: $table.isSynced, builder: (column) => column);
-
-  $$CustomersTableAnnotationComposer get customerId {
-    final $$CustomersTableAnnotationComposer composer = $composerBuilder(
-        composer: this,
-        getCurrentColumn: (t) => t.customerId,
-        referencedTable: $db.customers,
-        getReferencedColumn: (t) => t.id,
-        builder: (joinBuilder,
-                {$addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer}) =>
-            $$CustomersTableAnnotationComposer(
-              $db: $db,
-              $table: $db.customers,
-              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-              joinBuilder: joinBuilder,
-              $removeJoinBuilderFromRootComposer:
-                  $removeJoinBuilderFromRootComposer,
-            ));
-    return composer;
-  }
 }
 
 class $$TransactionsTableTableManager extends RootTableManager<
@@ -2742,9 +2666,12 @@ class $$TransactionsTableTableManager extends RootTableManager<
     $$TransactionsTableAnnotationComposer,
     $$TransactionsTableCreateCompanionBuilder,
     $$TransactionsTableUpdateCompanionBuilder,
-    (Transaction, $$TransactionsTableReferences),
+    (
+      Transaction,
+      BaseReferences<_$AppDatabase, $TransactionsTable, Transaction>
+    ),
     Transaction,
-    PrefetchHooks Function({bool customerId})> {
+    PrefetchHooks Function()> {
   $$TransactionsTableTableManager(_$AppDatabase db, $TransactionsTable table)
       : super(TableManagerState(
           db: db,
@@ -2756,13 +2683,15 @@ class $$TransactionsTableTableManager extends RootTableManager<
           createComputedFieldComposer: () =>
               $$TransactionsTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback: ({
-            Value<int> id = const Value.absent(),
-            Value<int> customerId = const Value.absent(),
+            Value<String> id = const Value.absent(),
+            Value<String> customerId = const Value.absent(),
             Value<List<Item>> itemsJson = const Value.absent(),
             Value<double> totalAmount = const Value.absent(),
             Value<DateTime> timestamp = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
             Value<String?> userId = const Value.absent(),
             Value<bool> isSynced = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
           }) =>
               TransactionsCompanion(
             id: id,
@@ -2770,17 +2699,21 @@ class $$TransactionsTableTableManager extends RootTableManager<
             itemsJson: itemsJson,
             totalAmount: totalAmount,
             timestamp: timestamp,
+            createdAt: createdAt,
             userId: userId,
             isSynced: isSynced,
+            rowid: rowid,
           ),
           createCompanionCallback: ({
-            Value<int> id = const Value.absent(),
-            required int customerId,
+            required String id,
+            required String customerId,
             required List<Item> itemsJson,
             required double totalAmount,
             Value<DateTime> timestamp = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
             Value<String?> userId = const Value.absent(),
             Value<bool> isSynced = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
           }) =>
               TransactionsCompanion.insert(
             id: id,
@@ -2788,50 +2721,15 @@ class $$TransactionsTableTableManager extends RootTableManager<
             itemsJson: itemsJson,
             totalAmount: totalAmount,
             timestamp: timestamp,
+            createdAt: createdAt,
             userId: userId,
             isSynced: isSynced,
+            rowid: rowid,
           ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (
-                    e.readTable(table),
-                    $$TransactionsTableReferences(db, table, e)
-                  ))
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
               .toList(),
-          prefetchHooksCallback: ({customerId = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [],
-              addJoins: <
-                  T extends TableManagerState<
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic>>(state) {
-                if (customerId) {
-                  state = state.withJoin(
-                    currentTable: table,
-                    currentColumn: table.customerId,
-                    referencedTable:
-                        $$TransactionsTableReferences._customerIdTable(db),
-                    referencedColumn:
-                        $$TransactionsTableReferences._customerIdTable(db).id,
-                  ) as T;
-                }
-
-                return state;
-              },
-              getPrefetchedDataCallback: (items) async {
-                return [];
-              },
-            );
-          },
+          prefetchHooksCallback: null,
         ));
 }
 
@@ -2844,9 +2742,12 @@ typedef $$TransactionsTableProcessedTableManager = ProcessedTableManager<
     $$TransactionsTableAnnotationComposer,
     $$TransactionsTableCreateCompanionBuilder,
     $$TransactionsTableUpdateCompanionBuilder,
-    (Transaction, $$TransactionsTableReferences),
+    (
+      Transaction,
+      BaseReferences<_$AppDatabase, $TransactionsTable, Transaction>
+    ),
     Transaction,
-    PrefetchHooks Function({bool customerId})>;
+    PrefetchHooks Function()>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
