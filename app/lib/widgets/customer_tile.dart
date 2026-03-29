@@ -1,12 +1,43 @@
 import 'package:flutter/material.dart';
-import '../models/customer.dart';
+import '../core/db/drift_database.dart';
+import '../screens/customer_details_screen.dart';
 
 class CustomerTile extends StatelessWidget {
   final Customer customer;
-  final VoidCallback? onTap;
-  final VoidCallback? onPayment;
 
-  const CustomerTile({Key? key, required this.customer, this.onTap, this.onPayment}) : super(key: key);
+  const CustomerTile({super.key, required this.customer});
+
+  String _getInitials(String name) {
+    List<String> names = name.trim().split(" ");
+    if (names.length >= 2) {
+      return (names[0][0] + names[1][0]).toUpperCase();
+    } else if (names.isNotEmpty && names[0].isNotEmpty) {
+      return names[0][0].toUpperCase();
+    }
+    return "?";
+  }
+
+  String formatPhone(String phone) {
+    if (phone.length <= 5) return phone; // basic safety
+
+    return "+91 ${phone.substring(0, 5)} ${phone.substring(5)}";
+  }
+
+  Color _getDeterministicColor(int id) {
+    final List<Color> modernColors = [
+      const Color(0xFF6366F1), // Indigo
+      const Color(0xFFEC4899), // Pink
+      const Color(0xFFF59E0B), // Amber
+      const Color(0xFF10B981), // Emerald
+      const Color(0xFF3B82F6), // Blue
+      const Color(0xFF8B5CF6), // Violet
+      const Color(0xFFF97316), // Orange
+      const Color(0xFF06B6D4), // Cyan
+      const Color(0xFF84CC16), // Lime
+      const Color(0xFFEF4444), // Red
+    ];
+    return modernColors[id % modernColors.length];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -14,24 +45,21 @@ class CustomerTile extends StatelessWidget {
     final isZero = customer.totalDue == 0;
     final absDue = customer.totalDue.abs();
     
-    final statusColor = isNegative 
-        ? Colors.green 
-        : (isZero ? Colors.grey.shade600 : Colors.red.shade700);
-    
-    final bgColor = isNegative 
-        ? Colors.green.shade50 
-        : (isZero ? Colors.grey.shade50 : Colors.red.shade50);
+    final statusColor = isNegative || isZero
+        ? const Color(0xFF10B981) // Emerald/Green
+        : const Color(0xFFEF4444); // Red
+
+    final avatarColor = _getDeterministicColor(customer.id);
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 12,
             offset: const Offset(0, 4),
           ),
         ],
@@ -39,17 +67,35 @@ class CustomerTile extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => CustomerDetailsScreen(customerId: customer.id),
+              ),
+            );
+          },
+          borderRadius: BorderRadius.circular(20),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                CircleAvatar(
-                  backgroundColor: Colors.indigo.shade100,
-                  child: Text(
-                    customer.name.substring(0, 1).toUpperCase(),
-                    style: TextStyle(color: Colors.indigo.shade900, fontWeight: FontWeight.bold),
+                Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: avatarColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  child: Center(
+                    child: Text(
+                      _getInitials(customer.name),
+                      style: TextStyle(
+                        color: avatarColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -60,25 +106,18 @@ class CustomerTile extends StatelessWidget {
                       Text(
                         customer.name,
                         style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF1F2937),
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: bgColor,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          isNegative ? 'Advance' : (isZero ? 'Settled' : 'Due'),
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: statusColor,
-                          ),
+                      Text(
+                        formatPhone(customer.phone),
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.grey.shade500,
                         ),
                       ),
                     ],
@@ -88,40 +127,21 @@ class CustomerTile extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      '₹${absDue.toStringAsFixed(2)}',
+                      isZero ? "PAID" : "₹${absDue.toStringAsFixed(0)}",
                       style: TextStyle(
                         fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w800,
                         color: statusColor,
                       ),
                     ),
-                    if (onPayment != null && !isZero) ...[
-                      const SizedBox(height: 4),
-                      InkWell(
-                        onTap: onPayment,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.green.shade600,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.add, size: 14, color: Colors.white),
-                              Text(
-                                ' Pay',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                    Text(
+                      isNegative ? "Advance" : (isZero ? "No Due" : "Due"),
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: statusColor.withOpacity(0.7),
                       ),
-                    ],
+                    ),
                   ],
                 ),
               ],

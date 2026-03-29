@@ -1,126 +1,266 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../providers/app_state.dart';
-import '../models/transaction.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/db/providers.dart';
+import '../core/db/drift_database.dart';
 import '../widgets/customer_tile.dart';
 import '../widgets/add_customer_dialog.dart';
 
-class CustomersScreen extends StatelessWidget {
+class CustomersScreen extends ConsumerStatefulWidget {
   const CustomersScreen({Key? key}) : super(key: key);
 
-  void _showPaymentDialog(BuildContext context, AppState appState, dynamic customer) {
-    final amountController = TextEditingController();
-    final noteController = TextEditingController();
+  @override
+  ConsumerState<CustomersScreen> createState() => _CustomersScreenState();
+}
 
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Payment from ${customer.name}'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Current Due: ₹${customer.totalDue.toStringAsFixed(2)}'),
-            const SizedBox(height: 16),
-            TextField(
-              controller: amountController,
-              decoration: const InputDecoration(
-                labelText: 'Payment Amount',
-                prefixText: '₹ ',
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.number,
-              autofocus: true,
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: noteController,
-              decoration: const InputDecoration(
-                labelText: 'Note (Optional)',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              final amount = double.tryParse(amountController.text);
-              if (amount != null && amount > 0) {
-                appState.addTransaction(customer, amount, noteController.text, TransactionType.credit);
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Payment recorded!')),
-                );
-              }
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
-            child: const Text('Confirm Payment'),
-          ),
-        ],
-      ),
-    );
+class _CustomersScreenState extends ConsumerState<CustomersScreen> {
+  String searchQuery = "";
+  String selectedFilter = "All";
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
+  bool _isSearchFocused = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchFocusNode.addListener(() {
+      setState(() {
+        _isSearchFocused = _searchFocusNode.hasFocus;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _searchFocusNode.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final customersAsync = ref.watch(customersStreamProvider);
+
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: const Color(0xFFF9FAFB),
       appBar: AppBar(
-        title: const Text('Customers', style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.white,
+        title: const Text(
+          'Customers',
+          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 24, color: Color(0xFF1F2937)),
+        ),
+        centerTitle: false,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.add_circle_outline_rounded, color: Colors.grey.shade600, size: 28),
+            onPressed: () => AddCustomerDialog.show(context),
+            tooltip: 'Add Customer',
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
-      body: Consumer<AppState>(
-        builder: (context, appState, child) {
-          final customers = appState.customers;
-          
+      body: customersAsync.when(
+        data: (customers) {
+          final totalDue = customers.fold<double>(
+            0,
+            (sum, item) => sum + ((item.totalDue > 0) ? item.totalDue : 0),
+          );
+
+          var filteredCustomers = customers.where((c) {
+            final matchesSearch = c.name.toLowerCase().contains(searchQuery.toLowerCase()) ||
+                                 c.phone.contains(searchQuery);
+            if (!matchesSearch) return false;
+
+            if (selectedFilter == "Due") return c.totalDue > 0;
+            if (selectedFilter == "Paid") return c.totalDue <= 0;
+            return true;
+          }).toList();
+
           return Column(
             children: [
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                margin: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.indigo.shade50,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.indigo.shade100),
-                ),
-                child: Column(
-                  children: [
-                    const Text(
-                      'Total Amount to Collect',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.indigo,
-                        fontWeight: FontWeight.w500,
+              // Sleek Total Amount Widget with Animation
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                height: _isSearchFocused ? 0 : 130, // Approximate height
+                margin: EdgeInsets.fromLTRB(16, _isSearchFocused ? 0 : 8, 16, _isSearchFocused ? 0 : 16),
+                child: AnimatedOpacity(
+                  duration: const Duration(milliseconds: 350),
+                  opacity: _isSearchFocused ? 0 : 1,
+                  child: SingleChildScrollView(
+                    physics: const NeverScrollableScrollPhysics(),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF6366F1), Color(0xFF4F46E5)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF6366F1).withOpacity(0.3),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Total to Collect',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.white.withOpacity(0.8),
+                                  fontWeight: FontWeight.w500,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                '₹${totalDue.toStringAsFixed(0)}',
+                                style: const TextStyle(
+                                  fontSize: 36,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: IconButton(
+                              onPressed: () {
+                                // TODO: Implement SMS to all customers with dues
+                              },
+                              icon: const Icon(Icons.sms_rounded, color: Colors.white),
+                              tooltip: 'Notify All Overdue',
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '₹${appState.totalDueAmount.toStringAsFixed(2)}',
-                      style: const TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.red,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
+
+              // Search Bar - Primary search interface with animation
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 350),
+                  curve: Curves.easeInOut,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(_isSearchFocused ? 0.06 : 0.03),
+                        blurRadius: _isSearchFocused ? 15 : 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: TextField(
+                    controller: _searchController,
+                    focusNode: _searchFocusNode,
+                    onChanged: (value) => setState(() => searchQuery = value),
+                    decoration: InputDecoration(
+                      hintText: 'Search by name or phone...',
+                      hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 15),
+                      prefixIcon: const Icon(Icons.search, color: Color(0xFF6366F1)),
+                      suffixIcon: _isSearchFocused 
+                        ? IconButton(
+                            icon: const Icon(Icons.cancel_rounded, color: Colors.grey),
+                            onPressed: () {
+                              _searchController.clear();
+                              _searchFocusNode.unfocus();
+                              setState(() {
+                                searchQuery = "";
+                                _isSearchFocused = false;
+                              });
+                            },
+                          )
+                        : null,
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 15),
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // Filter Chips
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: ["All", "Due", "Paid"].map((filter) {
+                    final isSelected = selectedFilter == filter;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ChoiceChip(
+                        label: Text(filter),
+                        selected: isSelected,
+                        onSelected: (selected) {
+                          if (selected) setState(() => selectedFilter = filter);
+                        },
+                        selectedColor: const Color(0xFF6366F1),
+                        backgroundColor: Colors.white,
+                        labelStyle: TextStyle(
+                          color: isSelected ? Colors.white : const Color(0xFF4B5563),
+                          fontWeight: FontWeight.w600,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(
+                            color: isSelected ? Colors.transparent : Colors.grey.shade200,
+                          ),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        showCheckmark: false,
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+
+              const SizedBox(height: 8),
+
               Expanded(
-                child: customers.isEmpty
-                    ? const Center(child: Text('No customers found.'))
+                child: filteredCustomers.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.search_off_rounded, size: 64, color: Colors.grey.shade300),
+                            const SizedBox(height: 16),
+                            Text(
+                              'No customers found',
+                              style: TextStyle(color: Colors.grey.shade500, fontSize: 16, fontWeight: FontWeight.w500),
+                            ),
+                          ],
+                        ),
+                      )
                     : ListView.builder(
-                        itemCount: customers.length,
+                        padding: const EdgeInsets.only(bottom: 24, top: 8),
+                        itemCount: filteredCustomers.length,
                         itemBuilder: (context, index) {
-                          final customer = customers[index];
+                          final customer = filteredCustomers[index];
                           return CustomerTile(
                             customer: customer,
-                            onPayment: () => _showPaymentDialog(context, appState, customer),
                           );
                         },
                       ),
@@ -128,11 +268,8 @@ class CustomersScreen extends StatelessWidget {
             ],
           );
         },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => AddCustomerDialog.show(context),
-        child: const Icon(Icons.person_add),
-        tooltip: 'Add Customer',
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, stack) => Center(child: Text('Error: $err')),
       ),
     );
   }
