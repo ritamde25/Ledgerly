@@ -23,33 +23,27 @@ Digitizing the traditional **Udhaar/Khata** (credit ledger) workflow for small r
 
 ## Product showcase
 
-<div align="center">
+## Smart Billing Scan (video)
 
-<!-- Top Row: Video + Screenshots -->
-<table>
-<tr>
-<td width="65%" valign="top">
+<p align="center">
+  <a href="assets/showcase/smart-billing-demo.mp4">
+    <img src="assets/showcase/smart-billing-preview.gif" width="300"/>
+  </a>
+</p>
 
-<a href="assets/showcase/smart-billing-demo.mp4">
-  <img src="assets/showcase/smart-billing-preview.gif" width="100%" />
-</a>
+## App screenshots
 
-</td>
+<p align="center">
+  <img src="assets/showcase/dashboard.jpg" width="18%" />
+  <img src="assets/showcase/billing.jpg" width="18%" />
+  <img src="assets/showcase/bills.jpg" width="18%" />
+  <img src="assets/showcase/customers.jpg" width="18%" />
+  <img src="assets/showcase/details.jpg" width="18%" />
+</p>
 
-<td width="35%" valign="top">
-
-<img src="assets/showcase/dashboard.jpg" width="100%" /><br/>
-<img src="assets/showcase/billing.jpg" width="100%" /><br/>
-<img src="assets/showcase/bills.jpg" width="100%" /><br/>
-<img src="assets/showcase/customers.jpg" width="100%" /><br/>
-<img src="assets/showcase/details.jpg" width="100%" /><br/>
-<img src="assets/showcase/inventory.jpg" width="100%" />
-
-</td>
-</tr>
-</table>
-
-</div>
+<p align="center">
+  <img src="assets/showcase/inventory.jpg" width="18%" />
+</p>
 ---
 
 ## Tech stack
