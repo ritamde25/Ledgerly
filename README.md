@@ -21,6 +21,28 @@ Digitizing the traditional **Udhaar/Khata** (credit ledger) workflow for small r
 
 ---
 
+## Product showcase
+
+### Smart Billing Scan (video)
+
+```md
+[![Watch Smart Billing Demo](assets/showcase/smart-billing-preview.gif)](assets/showcase/smart-billing-demo.mp4)
+```
+
+### App screenshots
+
+```md
+| Dashboard | Billing | Bills |
+|---|---|---|
+| ![Dashboard](assets/showcase/dashboard.jpg) | ![Billing](assets/showcase/billing.jpg) | ![Customers](assets/showcase/bills.jpg) |
+
+| Customers | Customer Details | Inventory |
+|---|---|---|
+| ![Inventory](assets/showcase/customers.jpg) | ![History](assets/showcase/customers-details.jpg) | ![Account](assets/showcase/inventory.jpg) |
+```
+
+---
+
 ## Tech stack
 
 **Mobile**
@@ -151,6 +173,7 @@ Practical notes:
 ## Security & publishing notes
 
 - `.env` files and model weights are **not meant to be committed**.
-- `backend/best.pt` is gitignored. For local dev, supply your own weights or configure Hugging Face download (documented in `backend/README.md`).
+- You do **not** need to provide your own model for Smart Billing Scan. The backend uses the project's Hugging Face model automatically when no local model file is found.
+- `backend/best.pt` is gitignored. If you want to use your own weights, place them at `backend/best.pt` or set `MODEL_PATH` in `backend/.env`.
 
 ---
