@@ -23,19 +23,31 @@ Digitizing the traditional **Udhaar/Khata** (credit ledger) workflow for small r
 
 ## Product showcase
 
-### Smart Billing Scan (video)
-
-[![Watch Smart Billing Demo](assets/showcase/smart-billing-preview.gif)](assets/showcase/smart-billing-demo.mp4)
-
-### App screenshots
-
-| Dashboard | Billing | Bills |
-|---|---|---|
-| ![Dashboard](assets/showcase/dashboard.jpg) | ![Billing](assets/showcase/billing.jpg) | ![Customers](assets/showcase/bills.jpg) |
-
-| Customers | Customer Details | Inventory |
-|---|---|---|
-| ![Inventory](assets/showcase/customers.jpg) | ![History](assets/showcase/customers-details.jpg) | ![Account](assets/showcase/inventory.jpg) |
+<table>
+	<tr>
+		<td width="62%" valign="top">
+			<a href="assets/showcase/smart-billing-demo.mp4">
+				<img src="assets/showcase/smart-billing-preview.gif" alt="Smart Billing demo" width="100%" />
+			</a>
+		</td>
+		<td width="38%" valign="top">
+			<table>
+				<tr>
+					<td><img src="assets/showcase/dashboard.jpg" alt="Dashboard" width="100%" /></td>
+					<td><img src="assets/showcase/billing.jpg" alt="Billing" width="100%" /></td>
+				</tr>
+				<tr>
+					<td><img src="assets/showcase/bills.jpg" alt="Bills" width="100%" /></td>
+					<td><img src="assets/showcase/customers.jpg" alt="Customers" width="100%" /></td>
+				</tr>
+				<tr>
+					<td><img src="assets/showcase/details.jpg" alt="Customer Details" width="100%" /></td>
+					<td><img src="assets/showcase/inventory.jpg" alt="Inventory" width="100%" /></td>
+				</tr>
+			</table>
+		</td>
+	</tr>
+</table>
 
 
 ---
