@@ -97,6 +97,12 @@ flowchart LR
 - Sync strategy: push unsynced local rows before pulling; incremental pulls; avoids overwriting pending edits
 - Smart Billing Scan: camera capture → multipart upload to `/predict` → YOLO labels → inventory match by `yoloLabel` (fallback: name)
 
+## Dataset attribution
+
+The YOLO model used in Smart Billing Scan was trained using the Grocery Items dataset by IIT Patna on Roboflow Universe:
+
+- https://universe.roboflow.com/iit-patna-qg1jh/grocery_items-7i2em
+
 ---
 
 ## Repository layout
