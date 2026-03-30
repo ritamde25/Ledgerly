@@ -25,13 +25,10 @@ Digitizing the traditional **Udhaar/Khata** (credit ledger) workflow for small r
 
 ### Smart Billing Scan (video)
 
-```md
 [![Watch Smart Billing Demo](assets/showcase/smart-billing-preview.gif)](assets/showcase/smart-billing-demo.mp4)
-```
 
 ### App screenshots
 
-```md
 | Dashboard | Billing | Bills |
 |---|---|---|
 | ![Dashboard](assets/showcase/dashboard.jpg) | ![Billing](assets/showcase/billing.jpg) | ![Customers](assets/showcase/bills.jpg) |
@@ -39,7 +36,7 @@ Digitizing the traditional **Udhaar/Khata** (credit ledger) workflow for small r
 | Customers | Customer Details | Inventory |
 |---|---|---|
 | ![Inventory](assets/showcase/customers.jpg) | ![History](assets/showcase/customers-details.jpg) | ![Account](assets/showcase/inventory.jpg) |
-```
+
 
 ---
 
