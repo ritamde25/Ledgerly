@@ -42,7 +42,16 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+# Android local configuration
+**/android/local.properties
+
+# iOS/Xcode generated files
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/Runner/GeneratedPluginRegistrant.*
+
 # Environment files
 .env
 .env.local
 .env.*.local
+*.pt
