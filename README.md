@@ -31,6 +31,8 @@ Digitizing the traditional **Udhaar/Khata** (credit ledger) workflow for small r
   </a>
 </p>
 
+<p align="center"><sub>Click the GIF to open the full Smart Billing demo video.</sub></p>
+
 ## App screenshots
 
 <p align="center">
