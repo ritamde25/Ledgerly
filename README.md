@@ -34,15 +34,12 @@ Digitizing the traditional **Udhaar/Khata** (credit ledger) workflow for small r
 ## App screenshots
 
 <p align="center">
-  <img src="assets/showcase/dashboard.jpg" width="18%" />
-  <img src="assets/showcase/billing.jpg" width="18%" />
-  <img src="assets/showcase/bills.jpg" width="18%" />
-  <img src="assets/showcase/customers.jpg" width="18%" />
-  <img src="assets/showcase/details.jpg" width="18%" />
-</p>
-
-<p align="center">
-  <img src="assets/showcase/inventory.jpg" width="18%" />
+  <img src="assets/showcase/dashboard.jpg" width="16%" />
+  <img src="assets/showcase/billing.jpg" width="16%" />
+  <img src="assets/showcase/bills.jpg" width="16%" />
+  <img src="assets/showcase/customers.jpg" width="16%" />
+  <img src="assets/showcase/details.jpg" width="16%" />
+  <img src="assets/showcase/inventory.jpg" width="16%" />
 </p>
 ---
 
