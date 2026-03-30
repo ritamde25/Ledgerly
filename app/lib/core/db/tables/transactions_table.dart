@@ -4,8 +4,8 @@ import 'customers_table.dart';
 import '../models/item.dart';
 
 class Transactions extends Table {
-  TextColumn get id => text()(); // Changed from autoIncrement to TEXT for UUID support
-  TextColumn get customerId => text()(); // Changed from foreign key reference to TEXT
+  TextColumn get id => text()();
+  TextColumn get customerId => text()();
   TextColumn get itemsJson => text().map(const ItemsConverter())(); 
   RealColumn get totalAmount => real()();
   DateTimeColumn get timestamp => dateTime().withDefault(currentDateAndTime)();

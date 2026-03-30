@@ -1,9 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/auth/auth_provider.dart';
+import '../core/db/drift_database.dart';
 import '../core/db/providers.dart';
-import '../widgets/customer_tile.dart';
-import '../widgets/add_customer_dialog.dart';
+import '../core/utils/csv_transfer_service.dart';
+import '../core/utils/send_sms.dart';
+import '../widgets/popups/customer_tile.dart';
+import '../widgets/popups/add_customer_dialog.dart';
+
+enum _CustomersMenuAction {
+  add,
+  importCsv,
+  exportCsv,
+}
 
 class CustomersScreen extends ConsumerStatefulWidget {
   const CustomersScreen({Key? key}) : super(key: key);
@@ -18,6 +28,89 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   bool _isSearchFocused = false;
+
+  Future<void> _handleMenuAction(_CustomersMenuAction action) async {
+    if (action == _CustomersMenuAction.add) {
+      await AddCustomerDialog.show(context);
+      return;
+    }
+
+    final user = ref.read(userProvider);
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please sign in to use CSV import/export.')),
+      );
+      return;
+    }
+
+    final csvService = CsvTransferService(
+      db: ref.read(databaseProvider),
+      userId: user.id,
+    );
+
+    try {
+      if (action == _CustomersMenuAction.exportCsv) {
+        final fileName = await csvService.exportCustomersToCsv();
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Customers CSV exported: $fileName')),
+        );
+        return;
+      }
+
+      final result = await csvService.importCustomersFromCsv();
+      ref.read(syncServiceProvider).syncAll();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result.toSummary('Customers'))),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Customers CSV action failed: $e')),
+      );
+    }
+  }
+
+  Future<void> _notifyAllDueCustomers(List<Customer> customers) async {
+    final dueCustomers = customers
+        .where((c) => c.totalDue > 0 && c.phone.trim().isNotEmpty)
+        .toList();
+
+    if (dueCustomers.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No due customers with valid phone numbers.')),
+      );
+      return;
+    }
+
+    final user = ref.read(userProvider);
+    final storeName = (user?.userMetadata?['display_name'] as String?)?.trim().isNotEmpty == true
+        ? (user!.userMetadata?['display_name'] as String).trim()
+        : 'Your Store';
+
+    final phones = dueCustomers.map((c) => c.phone).toList();
+
+    final opened = await SmsReminderService.sendGenericReminderToAll(
+      phones: phones,
+      storeName: storeName,
+    );
+
+    if (!mounted) return;
+
+    if (opened) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Opening one SMS draft for ${dueCustomers.length} customers.'),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not open SMS app.')),
+      );
+    }
+  }
 
   @override
   void initState() {
@@ -52,10 +145,25 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         actions: [
-          IconButton(
-            icon: Icon(Icons.add_circle_outline_rounded, color: Colors.grey.shade600, size: 28),
-            onPressed: () => AddCustomerDialog.show(context),
-            tooltip: 'Add Customer',
+          PopupMenuButton<_CustomersMenuAction>(
+            tooltip: 'More options',
+            icon: Icon(Icons.more_vert_rounded, color: Colors.grey.shade700),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            onSelected: _handleMenuAction,
+            itemBuilder: (context) => const [
+              PopupMenuItem(
+                value: _CustomersMenuAction.add,
+                child: Text('Add Customer'),
+              ),
+              PopupMenuItem(
+                value: _CustomersMenuAction.importCsv,
+                child: Text('Import CSV'),
+              ),
+              PopupMenuItem(
+                value: _CustomersMenuAction.exportCsv,
+                child: Text('Export CSV'),
+              ),
+            ],
           ),
           const SizedBox(width: 8),
         ],
@@ -76,6 +184,30 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
             if (selectedFilter == "Paid") return c.totalDue <= 0;
             return true;
           }).toList();
+
+          if (selectedFilter == "Due") {
+            filteredCustomers.sort((a, b) {
+              final byAmount = b.totalDue.compareTo(a.totalDue);
+              if (byAmount != 0) {
+                return byAmount;
+              }
+              return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+            });
+          } else if (selectedFilter == "Paid") {
+            filteredCustomers.sort((a, b) {
+              final bAbsNegative = b.totalDue.abs();
+              final aAbsNegative = a.totalDue.abs();
+              final byAmount = bAbsNegative.compareTo(aAbsNegative);
+              if (byAmount != 0) {
+                return byAmount;
+              }
+              return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+            });
+          } else {
+            filteredCustomers.sort(
+              (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+            );
+          }
 
           return Column(
             children: [
@@ -140,9 +272,7 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
                               borderRadius: BorderRadius.circular(16),
                             ),
                             child: IconButton(
-                              onPressed: () {
-                                // TODO: Implement SMS to all customers with dues
-                              },
+                              onPressed: () => _notifyAllDueCustomers(customers),
                               icon: const Icon(Icons.sms_rounded, color: Colors.white),
                               tooltip: 'Notify All Overdue',
                             ),

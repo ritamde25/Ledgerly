@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:drift/drift.dart' hide Column;
 import '../core/db/drift_database.dart';
 import '../core/db/daos/transactions_dao.dart';
-import '../core/db/daos/inventory_dao.dart';
 import '../core/db/models/item.dart';
 import '../core/db/providers.dart';
-import '../core/auth/auth_provider.dart';
-import '../widgets/customer_tile.dart';
-import 'customer_details_screen.dart';
+import '../widgets/popups/add_bill_item_sheet.dart';
+import '../widgets/popups/customer_tile.dart';
+import '../widgets/popups/discount_sheet.dart';
+import '../widgets/popups/item_price_edit_sheet.dart';
 
 class BillSummaryScreen extends ConsumerStatefulWidget {
   final TransactionWithCustomer transactionWithCustomer;
@@ -17,7 +16,7 @@ class BillSummaryScreen extends ConsumerStatefulWidget {
   const BillSummaryScreen({
     Key? key,
     required this.transactionWithCustomer,
-    this.initialIsEditable = true,
+    this.initialIsEditable = false,
   }) : super(key: key);
 
   @override
@@ -60,389 +59,59 @@ class _BillSummaryScreenState extends ConsumerState<BillSummaryScreen> {
     });
   }
 
-  void _showItemEditSheet(int index) {
-    final item = items[index];
-    double tempPrice = item.price;
-
-    showModalBottomSheet(
+  Future<void> _showItemEditSheet(int index) async {
+    final updatedPrice = await showModalBottomSheet<double>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setSheetState) => Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-          ),
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom + 32,
-            top: 12, left: 24, right: 24,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildHandle(),
-              const Text('Adjust Price', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF1F2937))),
-              const SizedBox(height: 8),
-              Text(item.name, style: TextStyle(color: Colors.grey.shade600, fontSize: 16, fontWeight: FontWeight.w600)),
-              const SizedBox(height: 40),
-
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _adjustmentBtn(Icons.remove_rounded, () => setSheetState(() => tempPrice = (tempPrice - 10).clamp(0, 100000)), isRed: true),
-                  const SizedBox(width: 24),
-                  Column(
-                    children: [
-                      Text('UNIT PRICE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.indigo.withOpacity(0.5), letterSpacing: 1.5)),
-                      const SizedBox(height: 4),
-                      Text('₹${tempPrice.toStringAsFixed(0)}', style: const TextStyle(fontSize: 54, fontWeight: FontWeight.w900, color: Color(0xFF1F2937))),
-                    ],
-                  ),
-                  const SizedBox(width: 24),
-                  _adjustmentBtn(Icons.add_rounded, () => setSheetState(() => tempPrice += 10), isGreen: true),
-                ],
-              ),
-              const SizedBox(height: 40),
-
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _presetBtn(setSheetState, '-₹100', () => tempPrice -= 100),
-                  _presetBtn(setSheetState, '-₹50', () => tempPrice -= 50),
-                  _presetBtn(setSheetState, '+₹50', () => tempPrice += 50),
-                  _presetBtn(setSheetState, '+₹100', () => tempPrice += 100),
-                ],
-              ),
-
-              const SizedBox(height: 48),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      items[index] = items[index].copyWith(price: tempPrice);
-                    });
-                    Navigator.pop(context);
-                  },
-                  style: _buttonStyle(const Color(0xFF1F2937)),
-                  child: const Text('Update Price', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+      builder: (_) => ItemPriceEditSheet(item: items[index]),
     );
+
+    if (!mounted || updatedPrice == null || index >= items.length) {
+      return;
+    }
+
+    setState(() {
+      items[index] = items[index].copyWith(price: updatedPrice);
+    });
   }
 
-  void _showAddItemSheet() {
-    final nameController = TextEditingController();
-    final priceController = TextEditingController();
-    final qtyController = TextEditingController(text: '1');
-    bool addToInventory = false;
-    UnifiedInventoryItem? selectedInventoryItem;
-
-    showModalBottomSheet(
+  Future<void> _showAddItemSheet() async {
+    final newItem = await showModalBottomSheet<Item>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setSheetState) => Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-          ),
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom + 32,
-            top: 12, left: 24, right: 24,
-          ),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHandle(),
-                const Center(child: Text('Add Item', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF1F2937)))),
-                const SizedBox(height: 24),
-                
-                TextField(
-                  controller: nameController,
-                  decoration: InputDecoration(
-                    labelText: 'Item Name',
-                    hintText: 'Search or enter new item',
-                    prefixIcon: const Icon(Icons.search_rounded),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
-                    filled: true,
-                    fillColor: Colors.grey.shade50,
-                  ),
-                  onChanged: (val) => setSheetState(() {
-                    selectedInventoryItem = null;
-                  }),
-                ),
-                
-                // Suggestions logic
-                if (nameController.text.isNotEmpty && selectedInventoryItem == null)
-                  Consumer(
-                    builder: (context, ref, _) {
-                      final userId = ref.watch(userProvider)?.id ?? '';
-                      return StreamBuilder<List<UnifiedInventoryItem>>(
-                        stream: ref.watch(inventoryDaoProvider).watchUnifiedInventory(userId, query: nameController.text, limit: 3),
-                        builder: (context, snapshot) {
-                          if (!snapshot.hasData || snapshot.data!.isEmpty) return const SizedBox.shrink();
-                          return Container(
-                            margin: const EdgeInsets.only(top: 8),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: Colors.grey.shade200),
-                            ),
-                            child: Column(
-                              children: snapshot.data!.map<Widget>((item) => ListTile(
-                                title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-                                subtitle: Text('₹${item.price.toStringAsFixed(0)}'),
-                                onTap: () {
-                                  setSheetState(() {
-                                    selectedInventoryItem = item;
-                                    nameController.text = item.name;
-                                    priceController.text = item.price.toStringAsFixed(0);
-                                  });
-                                },
-                              )).toList(),
-                            ),
-                          );
-                        }
-                      );
-                    },
-                  ),
-
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: priceController,
-                        keyboardType: TextInputType.number,
-                        decoration: InputDecoration(
-                          labelText: 'Price',
-                          prefixText: '₹ ',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: TextField(
-                        controller: qtyController,
-                        keyboardType: TextInputType.number,
-                        decoration: InputDecoration(
-                          labelText: 'Quantity',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-
-                if (selectedInventoryItem == null && nameController.text.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 16),
-                    child: Row(
-                      children: [
-                        Checkbox(
-                          value: addToInventory,
-                          onChanged: (val) => setSheetState(() => addToInventory = val ?? false),
-                          activeColor: Colors.indigo,
-                        ),
-                        const Expanded(child: Text('Add to inventory for future use', style: TextStyle(fontWeight: FontWeight.w500))),
-                      ],
-                    ),
-                  ),
-
-                const SizedBox(height: 32),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      if (nameController.text.isEmpty) return;
-                      final price = double.tryParse(priceController.text) ?? 0.0;
-                      final qty = int.tryParse(qtyController.text) ?? 1;
-                      
-                      final newItem = Item(
-                        name: nameController.text,
-                        price: price,
-                        quantity: qty,
-                        baseQuantity: selectedInventoryItem?.baseQuantity,
-                        quantityMetric: selectedInventoryItem?.quantityMetric ?? 'pcs',
-                      );
-
-                      if (addToInventory && selectedInventoryItem == null) {
-                        final userId = ref.read(userProvider)?.id;
-                        if (userId != null) {
-                          await ref.read(inventoryDaoProvider).insertItem(
-                            InventoryItemsCompanion(
-                              name: Value(nameController.text),
-                              price: Value(price),
-                              userId: Value(userId),
-                              baseQuantity: const Value(1.0),
-                              quantityMetric: const Value('pcs'),
-                            ),
-                          );
-                        }
-                      }
-
-                      setState(() {
-                        items.add(newItem);
-                      });
-                      Navigator.pop(context);
-                    },
-                    style: _buttonStyle(const Color(0xFF1F2937)),
-                    child: const Text('Add to Bill', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+      builder: (_) => const AddBillItemSheet(),
     );
+
+    if (!mounted || newItem == null) {
+      return;
+    }
+
+    setState(() {
+      items.add(newItem);
+    });
   }
 
-  void _showDiscountSheet() {
-    double tempDiscount = discountValue;
-    showModalBottomSheet(
+  Future<void> _showDiscountSheet() async {
+    final updatedDiscount = await showModalBottomSheet<double>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setSheetState) => Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-          ),
-          padding: const EdgeInsets.fromLTRB(24, 12, 24, 40),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildHandle(),
-                const Text('Add Discount', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF1F2937))),
-                const SizedBox(height: 8),
-                Text('Adjust absolute cash discount', style: TextStyle(color: Colors.grey.shade600, fontSize: 14, fontWeight: FontWeight.w500)),
-                const SizedBox(height: 48),
-
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _adjustmentBtn(Icons.remove_rounded, () => setSheetState(() => tempDiscount = (tempDiscount - 5).clamp(0, subtotal)), isRed: true),
-                    const SizedBox(width: 24),
-                    Column(
-                      children: [
-                        Text('CASH DISCOUNT', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.green.withOpacity(0.5), letterSpacing: 1.5)),
-                        Text('₹${tempDiscount.toStringAsFixed(0)}', style: const TextStyle(fontSize: 48, fontWeight: FontWeight.w900, color: Color(0xFF10B981))),
-                      ],
-                    ),
-                    const SizedBox(width: 24),
-                    _adjustmentBtn(Icons.add_rounded, () => setSheetState(() => tempDiscount = (tempDiscount + 5).clamp(0, subtotal)), isGreen: true),
-                  ],
-                ),
-
-                const SizedBox(height: 40),
-
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  alignment: WrapAlignment.center,
-                  children: [
-                    _quickDiscountBtn(setSheetState, '₹10', () => tempDiscount = (tempDiscount + 10).clamp(0, subtotal)),
-                    _quickDiscountBtn(setSheetState, '₹50', () => tempDiscount = (tempDiscount + 50).clamp(0, subtotal)),
-                    _quickDiscountBtn(setSheetState, '₹100', () => tempDiscount = (tempDiscount + 100).clamp(0, subtotal)),
-                    _quickDiscountBtn(setSheetState, '₹500', () => tempDiscount = (tempDiscount + 500).clamp(0, subtotal)),
-                    _quickDiscountBtn(setSheetState, '-₹10', () => tempDiscount = (tempDiscount - 10).clamp(0, subtotal)),
-                    _quickDiscountBtn(setSheetState, '-₹50', () => tempDiscount = (tempDiscount - 50).clamp(0, subtotal)),
-                    _quickDiscountBtn(setSheetState, 'Clear', () => tempDiscount = 0, isDanger: true),
-                  ],
-                ),
-
-                const SizedBox(height: 48),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      setState(() => discountValue = tempDiscount);
-                      Navigator.pop(context);
-                    },
-                    style: _buttonStyle(const Color(0xFF10B981)),
-                    child: const Text('Apply Discount', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+      builder: (_) => DiscountSheet(
+        initialDiscount: discountValue,
+        subtotal: subtotal,
       ),
     );
+
+    if (!mounted || updatedDiscount == null) {
+      return;
+    }
+
+    setState(() {
+      discountValue = updatedDiscount;
+    });
   }
-
-  Widget _adjustmentBtn(IconData icon, VoidCallback onTap, {bool isRed = false, bool isGreen = false}) {
-    Color color = const Color(0xFF1F2937);
-    Color bg = const Color(0xFFF3F4F6);
-    if (isRed) { color = Colors.red.shade600; bg = Colors.red.shade50; }
-    if (isGreen) { color = Colors.green.shade600; bg = Colors.green.shade50; }
-
-    return Material(
-      color: bg,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Icon(icon, size: 24, color: color),
-        ),
-      ),
-    );
-  }
-
-  Widget _presetBtn(StateSetter setSheetState, String label, VoidCallback onAction) {
-    return InkWell(
-      onTap: () => setSheetState(() => onAction()),
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey.shade200, width: 1.5),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Text(label, style: const TextStyle(fontWeight: FontWeight.w800, color: Color(0xFF4B5563), fontSize: 14)),
-      ),
-    );
-  }
-
-  Widget _quickDiscountBtn(StateSetter setSheetState, String label, VoidCallback onAction, {bool isDanger = false}) {
-    return IntrinsicWidth(
-      child: OutlinedButton(
-        onPressed: () => setSheetState(() {
-          onAction();
-        }),
-        style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          side: BorderSide(color: isDanger ? Colors.red.shade100 : Colors.grey.shade100, width: 1.5),
-          backgroundColor: isDanger ? Colors.red.shade50.withOpacity(0.5) : Colors.grey.shade50,
-        ),
-        child: Text(label, style: TextStyle(color: isDanger ? Colors.red.shade700 : Colors.grey.shade800, fontWeight: FontWeight.w800, fontSize: 14)),
-      ),
-    );
-  }
-
-  Widget _buildHandle() => Center(
-    child: Container(
-      width: 48, height: 5,
-      margin: const EdgeInsets.only(bottom: 24),
-      decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(10)),
-    ),
-  );
 
   ButtonStyle _buttonStyle(Color color) => ElevatedButton.styleFrom(
     backgroundColor: color, foregroundColor: Colors.white,

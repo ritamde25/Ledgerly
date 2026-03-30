@@ -2,7 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/db/providers.dart';
 import '../core/db/drift_database.dart';
-import '../widgets/record_payment_dialog.dart';
+import '../core/auth/auth_provider.dart';
+import '../core/utils/send_sms.dart';
+import '../widgets/popups/delete_customer_dialog.dart';
+import '../widgets/popups/edit_customer_dialog.dart';
+import '../widgets/popups/edit_due_dialog.dart';
+import '../widgets/popups/record_payment_dialog.dart';
 import '../widgets/transaction_card.dart';
 import '../core/db/daos/transactions_dao.dart';
 
@@ -11,272 +16,45 @@ class CustomerDetailsScreen extends ConsumerWidget {
 
   const CustomerDetailsScreen({Key? key, required this.customerId}) : super(key: key);
 
-  void _showEditCustomerDialog(BuildContext context, WidgetRef ref, Customer customer) {
-    final nameController = TextEditingController(text: customer.name);
-    final phoneController = TextEditingController(text: customer.phone);
+  Future<void> _sendSmsReminder(BuildContext context, WidgetRef ref, Customer customer) async {
+    if (customer.phone.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Customer phone number is missing.')),
+      );
+      return;
+    }
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-        ),
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-          top: 12,
-          left: 24,
-          right: 24,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 24),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const Text(
-              'Edit Customer Details',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF1F2937)),
-            ),
-            const SizedBox(height: 24),
-            TextField(
-              controller: nameController,
-              decoration: InputDecoration(
-                labelText: 'Name',
-                labelStyle: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.w600),
-                filled: true,
-                fillColor: Colors.grey.shade50,
-                prefixIcon: Icon(Icons.person_rounded, color: Colors.indigo.shade400),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: Colors.indigo, width: 2)),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: phoneController,
-              decoration: InputDecoration(
-                labelText: 'Phone',
-                labelStyle: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.w600),
-                filled: true,
-                fillColor: Colors.grey.shade50,
-                prefixIcon: Icon(Icons.phone_rounded, color: Colors.indigo.shade400),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: Colors.indigo, width: 2)),
-              ),
-              keyboardType: TextInputType.phone,
-            ),
-            const SizedBox(height: 32),
-            ElevatedButton(
-              onPressed: () async {
-                final customersDao = ref.read(customersDaoProvider);
-                await customersDao.updateCustomer(customer.copyWith(
-                  name: nameController.text,
-                  phone: phoneController.text,
-                  isSynced: false,
-                ));
-                ref.read(syncServiceProvider).syncAll();
-                Navigator.pop(context);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.indigo,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 18),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                elevation: 0,
-              ),
-              child: const Text('Save Changes', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-            ),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
+    if (customer.totalDue <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No due amount to remind for this customer.')),
+      );
+      return;
+    }
+
+    final user = ref.read(userProvider);
+    final storeName = (user?.userMetadata?['display_name'] as String?)?.trim().isNotEmpty == true
+        ? (user!.userMetadata?['display_name'] as String).trim()
+        : user!.email!.split('@')[0];
+
+    final opened = await SmsReminderService.sendPersonalizedReminder(
+      customerName: customer.name,
+      phone: customer.phone,
+      dueAmount: customer.totalDue,
+      storeName: storeName,
     );
-  }
 
-  void _showEditDueDialog(BuildContext context, WidgetRef ref, Customer customer) {
-    final dueController = TextEditingController(text: customer.totalDue.toString());
+    if (!context.mounted) return;
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-        ),
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-          top: 12,
-          left: 24,
-          right: 24,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 24),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const Text(
-              'Update Due Amount',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF1F2937)),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Manually adjust the total outstanding balance for this customer.',
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
-            ),
-            const SizedBox(height: 24),
-            TextField(
-              controller: dueController,
-              decoration: InputDecoration(
-                labelText: 'Total Due',
-                labelStyle: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.w600),
-                filled: true,
-                fillColor: Colors.grey.shade50,
-                prefixIcon: Icon(Icons.currency_rupee_rounded, color: Colors.indigo.shade400),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: Colors.indigo, width: 2)),
-              ),
-              keyboardType: TextInputType.number,
-              autofocus: true,
-            ),
-            const SizedBox(height: 32),
-            ElevatedButton(
-              onPressed: () async {
-                final amount = double.tryParse(dueController.text);
-                if (amount != null) {
-                  final customersDao = ref.read(customersDaoProvider);
-                  await customersDao.updateCustomer(customer.copyWith(
-                    totalDue: amount,
-                    isSynced: false,
-                  ));
-                  ref.read(syncServiceProvider).syncAll();
-                  Navigator.pop(context);
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.indigo,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 18),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                elevation: 0,
-              ),
-              child: const Text('Save Amount', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-            ),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _confirmDelete(BuildContext context, WidgetRef ref, Customer customer) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-        ),
-        padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: 24),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.red.shade50,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(Icons.delete_forever_rounded, color: Colors.red.shade600, size: 32),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'Delete Customer?',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF1F2937)),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Are you sure you want to delete ${customer.name}? All transaction history for this customer will be permanently removed.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 15, height: 1.4),
-            ),
-            const SizedBox(height: 32),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 18),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      side: BorderSide(color: Colors.grey.shade300),
-                    ),
-                    child: Text('Cancel', style: TextStyle(color: Colors.grey.shade700, fontWeight: FontWeight.w700)),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      final dao = ref.read(customersDaoProvider);
-                      await dao.deleteCustomer(customer);
-                      ref.read(syncServiceProvider).syncAll();
-                      Navigator.pop(context); // Close bottom sheet
-                      Navigator.pop(context); // Go back to customers list
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red.shade600,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 18),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      elevation: 0,
-                    ),
-                    child: const Text('Delete', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _sendSmsReminder(Customer customer) {
-    // Placeholder function
-    print('Sending SMS reminder to ${customer.phone}');
+    final messenger = ScaffoldMessenger.of(context);
+    if (opened) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('Opening SMS draft for ${customer.name}.')),
+      );
+    } else {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Could not open SMS app.')),
+      );
+    }
   }
 
   @override
@@ -311,9 +89,9 @@ class CustomerDetailsScreen extends ConsumerWidget {
                   const PopupMenuItem(value: 'delete', child: Text('Delete Customer', style: TextStyle(color: Colors.red))),
                 ],
                 onSelected: (value) {
-                  if (value == 'edit_name') _showEditCustomerDialog(context, ref, customer);
-                  if (value == 'edit_due') _showEditDueDialog(context, ref, customer);
-                  if (value == 'delete') _confirmDelete(context, ref, customer);
+                  if (value == 'edit_name') EditCustomerDialog.show(context, ref, customer);
+                  if (value == 'edit_due') EditDueDialog.show(context, ref, customer);
+                  if (value == 'delete') DeleteCustomerDialog.show(context, ref, customer);
                 },
               ),
             ],
@@ -382,7 +160,7 @@ class CustomerDetailsScreen extends ConsumerWidget {
                         const SizedBox(width: 12),
                         Expanded(
                           child: OutlinedButton.icon(
-                            onPressed: () => _sendSmsReminder(customer),
+                            onPressed: () => _sendSmsReminder(context, ref, customer),
                             icon: const Icon(Icons.message_rounded, color: Colors.white, size: 18),
                             label: const Text('Reminder', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
                             style: OutlinedButton.styleFrom(

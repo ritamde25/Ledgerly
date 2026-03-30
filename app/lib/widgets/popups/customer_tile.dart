@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../core/db/drift_database.dart';
-import '../screens/customer_details_screen.dart';
+import '../../core/db/drift_database.dart';
+import '../../screens/customer_details_screen.dart';
 
 class CustomerTile extends StatelessWidget {
   final Customer customer;

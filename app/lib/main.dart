@@ -2,16 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'core/config/env_config.dart';
 import 'app.dart';
 
 Future<void> main() async {
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
 
-  // Initialize Supabase
+  // Initialize environment configuration
+  await EnvConfig.initialize();
+
+  // Initialize Supabase with credentials from .env
   await Supabase.initialize(
-    url: 'https://wnulzdmcpyzyvtphegev.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndudWx6ZG1jcHl6eXZ0cGhlZ2V2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2ODg5ODEsImV4cCI6MjA5MDI2NDk4MX0.SNErS8tHateepqwA0_Sv7q2tDq3GR2MvwWsyFeA4UNg',
+    url: EnvConfig.instance.supabaseUrl,
+    anonKey: EnvConfig.instance.supabaseAnonKey,
   );
 
   runApp(

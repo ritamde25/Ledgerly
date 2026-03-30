@@ -2,8 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../core/auth/auth_provider.dart';
 import '../core/db/providers.dart';
+import '../core/db/drift_database.dart';
+import '../core/utils/csv_transfer_service.dart';
 import '../widgets/transaction_card.dart';
+
+enum _HistoryMenuAction {
+  importCsv,
+  exportCsv,
+}
 
 class HistoryScreen extends ConsumerStatefulWidget {
   const HistoryScreen({Key? key}) : super(key: key);
@@ -17,6 +25,44 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   bool _isSearchFocused = false;
+
+  Future<void> _handleMenuAction(_HistoryMenuAction action) async {
+    final user = ref.read(userProvider);
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please sign in to use CSV import/export.')),
+      );
+      return;
+    }
+
+    final csvService = CsvTransferService(
+      db: ref.read(databaseProvider),
+      userId: user.id,
+    );
+
+    try {
+      if (action == _HistoryMenuAction.exportCsv) {
+        final fileName = await csvService.exportTransactionsToCsv();
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Transactions CSV exported: $fileName')),
+        );
+        return;
+      }
+
+      final result = await csvService.importTransactionsFromCsv();
+      ref.read(syncServiceProvider).syncAll();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result.toSummary('Transactions'))),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Transactions CSV action failed: $e')),
+      );
+    }
+  }
 
   @override
   void initState() {
@@ -70,6 +116,25 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
+        actions: [
+          PopupMenuButton<_HistoryMenuAction>(
+            tooltip: 'More options',
+            icon: Icon(Icons.more_vert_rounded, color: Colors.grey.shade700),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            onSelected: _handleMenuAction,
+            itemBuilder: (context) => const [
+              PopupMenuItem(
+                value: _HistoryMenuAction.importCsv,
+                child: Text('Import CSV'),
+              ),
+              PopupMenuItem(
+                value: _HistoryMenuAction.exportCsv,
+                child: Text('Export CSV'),
+              ),
+            ],
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: Stack(
         children: [

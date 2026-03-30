@@ -213,7 +213,7 @@ class HomeScreen extends ConsumerWidget {
                       );
                     }
                     return ListView.builder(
-                      physics: const BouncingScrollPhysics(),
+                      physics: const ClampingScrollPhysics(),
                       itemCount: recent.length,
                       itemBuilder: (context, index) {
                         return TransactionCard(transactionWithCustomer: recent[index]);
