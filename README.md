@@ -41,6 +41,7 @@ Digitizing the traditional **Udhaar/Khata** (credit ledger) workflow for small r
   <img src="assets/showcase/details.jpg" width="16%" />
   <img src="assets/showcase/inventory.jpg" width="16%" />
 </p>
+
 ---
 
 ## Tech stack
