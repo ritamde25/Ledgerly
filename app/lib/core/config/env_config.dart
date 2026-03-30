@@ -27,4 +27,12 @@ class EnvConfig {
     }
     return key;
   }
+
+  String get flaskApiUrl {
+    final url = dotenv.env['FLASK_API_URL'];
+    if (url == null || url.isEmpty) {
+      return 'http://10.0.2.2:5000';
+    }
+    return url;
+  }
 }

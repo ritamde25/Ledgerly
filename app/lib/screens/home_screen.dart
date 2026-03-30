@@ -4,6 +4,7 @@ import '../core/auth/auth_provider.dart';
 import '../core/db/providers.dart';
 import '../widgets/transaction_card.dart';
 import 'billing_screen.dart';
+import 'camera_billing_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -163,7 +164,10 @@ class HomeScreen extends ConsumerWidget {
                           label: 'Camera',
                           color: const Color(0xFF6366F1),
                           onTap: () {
-                            Navigator.push(context, MaterialPageRoute(builder: (context) => const BillingScreen()));
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const CameraBillingScreen()),
+                            );
                           },
                         ),
                         Container(width: 1, height: 40, color: Colors.grey.shade100),

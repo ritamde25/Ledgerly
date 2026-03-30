@@ -19,7 +19,14 @@ import 'package:drift/drift.dart' as drift;
 typedef PaymentModeEnum = PaymentMode;
 
 class BillingScreen extends ConsumerStatefulWidget {
-  const BillingScreen({super.key});
+  const BillingScreen({
+    super.key,
+    this.detectedLabelCounts = const {},
+    this.sourceImageCount = 0,
+  });
+
+  final Map<String, int> detectedLabelCounts;
+  final int sourceImageCount;
 
   @override
   ConsumerState<BillingScreen> createState() => _BillingScreenState();
@@ -33,6 +40,7 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
   double _discountValue = 0.0;
   String _customerSearchQuery = '';
   final TextEditingController _customerSearchController = TextEditingController();
+  bool _hasAppliedDetectedItems = false;
 
   double get _subtotal =>
       _cart.fold(0, (sum, item) => sum + (item.price * item.quantity));
@@ -41,10 +49,101 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
       (_subtotal - _discountValue).clamp(0, double.infinity);
 
   @override
+  void initState() {
+    super.initState();
+    _applyDetectedItemsIfAny();
+  }
+
+  @override
   void dispose() {
     _customerSearchController.dispose();
     super.dispose();
   }
+
+  Future<void> _applyDetectedItemsIfAny() async {
+    if (_hasAppliedDetectedItems || widget.detectedLabelCounts.isEmpty) {
+      return;
+    }
+
+    _hasAppliedDetectedItems = true;
+
+    final user = ref.read(userProvider);
+    if (user == null) {
+      return;
+    }
+
+    final inventoryDao = ref.read(inventoryDaoProvider);
+    final allItems = await inventoryDao.getUnifiedInventory(user.id);
+
+    if (!mounted) {
+      return;
+    }
+
+    final byYoloLabel = <String, UnifiedInventoryItem>{
+      for (final item in allItems)
+        if ((item.yoloLabel ?? '').trim().isNotEmpty)
+          _normalize(item.yoloLabel!): item,
+    };
+    final byName = <String, UnifiedInventoryItem>{
+      for (final item in allItems) _normalize(item.name): item,
+    };
+
+    int matchedCount = 0;
+    final unmatched = <String>[];
+
+    setState(() {
+      for (final entry in widget.detectedLabelCounts.entries) {
+        final normalizedLabel = _normalize(entry.key);
+        final quantity = entry.value;
+        if (quantity <= 0) {
+          continue;
+        }
+
+        final inventoryMatch = byYoloLabel[normalizedLabel] ?? byName[normalizedLabel];
+        if (inventoryMatch == null) {
+          unmatched.add(entry.key);
+          continue;
+        }
+
+        matchedCount += quantity;
+
+        final cartIndex = _cart.indexWhere((item) => item.name == inventoryMatch.name);
+        if (cartIndex >= 0) {
+          _cart[cartIndex] = _cart[cartIndex].copyWith(
+            quantity: _cart[cartIndex].quantity + quantity,
+          );
+        } else {
+          _cart.add(Item(
+            name: inventoryMatch.name,
+            price: inventoryMatch.price,
+            quantity: quantity,
+            baseQuantity: inventoryMatch.baseQuantity,
+            quantityMetric: inventoryMatch.quantityMetric,
+          ));
+        }
+      }
+    });
+
+    if (!mounted) {
+      return;
+    }
+
+    if (matchedCount > 0) {
+      final imagePart = widget.sourceImageCount > 0 ? ' from ${widget.sourceImageCount} image(s)' : '';
+      final unmatchedPart = unmatched.isNotEmpty ? ' ${unmatched.length} label(s) were not found in inventory.' : '';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Added $matchedCount detected item(s)$imagePart.$unmatchedPart')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No detected labels matched your inventory. You can still bill manually.'),
+        ),
+      );
+    }
+  }
+
+  String _normalize(String value) => value.trim().toLowerCase();
 
   void _addItemToCart(UnifiedInventoryItem inventoryItem) {
     setState(() {
