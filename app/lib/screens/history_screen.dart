@@ -6,6 +6,7 @@ import '../core/auth/auth_provider.dart';
 import '../core/db/providers.dart';
 import '../core/db/drift_database.dart';
 import '../core/utils/csv_transfer_service.dart';
+import '../widgets/common/animated_search_field.dart';
 import '../widgets/transaction_card.dart';
 
 enum _HistoryMenuAction {
@@ -143,44 +144,19 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
               // Search Bar
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(_isSearchFocused ? 0.06 : 0.03),
-                        blurRadius: _isSearchFocused ? 15 : 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: TextField(
-                    controller: _searchController,
-                    focusNode: _searchFocusNode,
-                    onChanged: (value) => setState(() => searchQuery = value),
-                    decoration: InputDecoration(
-                      hintText: 'Search by customer name...',
-                      hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 15),
-                      prefixIcon: const Icon(Icons.search, color: Color(0xFF6366F1)),
-                      suffixIcon: _isSearchFocused 
-                        ? IconButton(
-                            icon: const Icon(Icons.cancel_rounded, color: Colors.grey),
-                            onPressed: () {
-                              _searchController.clear();
-                              _searchFocusNode.unfocus();
-                              setState(() {
-                                searchQuery = "";
-                              });
-                            },
-                          )
-                        : null,
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 15),
-                    ),
-                  ),
+                child: AnimatedSearchField(
+                  controller: _searchController,
+                  focusNode: _searchFocusNode,
+                  isFocused: _isSearchFocused,
+                  hintText: 'Search by customer name...',
+                  onChanged: (value) => setState(() => searchQuery = value),
+                  onClear: () {
+                    _searchController.clear();
+                    _searchFocusNode.unfocus();
+                    setState(() {
+                      searchQuery = '';
+                    });
+                  },
                 ),
               ),
 

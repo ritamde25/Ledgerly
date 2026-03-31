@@ -84,7 +84,7 @@ class MyApp extends ConsumerWidget {
           }),
         ),
       ),
-      home: user == null ? const AuthScreen(showSkip: false) : const MainNavigation(),
+      home: user == null ? const AuthScreen() : const MainNavigation(),
       debugShowCheckedModeBanner: false,
     );
   }

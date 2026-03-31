@@ -6,6 +6,7 @@ class BillingBottomBar extends StatelessWidget {
   final bool canSubmit;
   final bool isSubmitting;
   final bool isUpfront;
+  final String? disabledButtonLabel;
   final VoidCallback onSubmit;
 
   const BillingBottomBar({
@@ -15,12 +16,17 @@ class BillingBottomBar extends StatelessWidget {
     required this.canSubmit,
     required this.isSubmitting,
     required this.isUpfront,
+    this.disabledButtonLabel,
     required this.onSubmit,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final buttonLabel = isUpfront ? 'Confirm & Record Payment' : 'Confirm & Save Bill';
+    final enabledButtonLabel =
+      isUpfront ? 'Confirm & Record Payment' : 'Confirm & Save Bill';
+    final buttonLabel = canSubmit
+      ? enabledButtonLabel
+      : (disabledButtonLabel ?? enabledButtonLabel);
 
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 18, 24, 24),

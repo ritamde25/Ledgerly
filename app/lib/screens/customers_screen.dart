@@ -6,6 +6,8 @@ import '../core/db/drift_database.dart';
 import '../core/db/providers.dart';
 import '../core/utils/csv_transfer_service.dart';
 import '../core/utils/send_sms.dart';
+import '../widgets/common/animated_search_field.dart';
+import '../widgets/customers/total_due_banner.dart';
 import '../widgets/popups/customer_tile.dart';
 import '../widgets/popups/add_customer_dialog.dart';
 
@@ -211,121 +213,27 @@ class _CustomersScreenState extends ConsumerState<CustomersScreen> {
 
           return Column(
             children: [
-              // Sleek Total Amount Widget with Animation
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-                height: _isSearchFocused ? 0 : 130, // Approximate height
-                margin: EdgeInsets.fromLTRB(16, _isSearchFocused ? 0 : 8, 16, _isSearchFocused ? 0 : 16),
-                child: AnimatedOpacity(
-                  duration: const Duration(milliseconds: 350),
-                  opacity: _isSearchFocused ? 0 : 1,
-                  child: SingleChildScrollView(
-                    physics: const NeverScrollableScrollPhysics(),
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF6366F1), Color(0xFF4F46E5)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(24),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF6366F1).withOpacity(0.3),
-                            blurRadius: 20,
-                            offset: const Offset(0, 10),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Total to Collect',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.white.withOpacity(0.8),
-                                  fontWeight: FontWeight.w500,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                '₹${totalDue.toStringAsFixed(0)}',
-                                style: const TextStyle(
-                                  fontSize: 36,
-                                  fontWeight: FontWeight.w900,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ],
-                          ),
-                          Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: IconButton(
-                              onPressed: () => _notifyAllDueCustomers(customers),
-                              icon: const Icon(Icons.sms_rounded, color: Colors.white),
-                              tooltip: 'Notify All Overdue',
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
+              TotalDueBanner(
+                isHidden: _isSearchFocused,
+                totalDue: totalDue,
+                onNotifyAll: () => _notifyAllDueCustomers(customers),
               ),
 
-              // Search Bar - Primary search interface with animation
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 350),
-                  curve: Curves.easeInOut,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(_isSearchFocused ? 0.06 : 0.03),
-                        blurRadius: _isSearchFocused ? 15 : 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: TextField(
-                    controller: _searchController,
-                    focusNode: _searchFocusNode,
-                    onChanged: (value) => setState(() => searchQuery = value),
-                    decoration: InputDecoration(
-                      hintText: 'Search by name or phone...',
-                      hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 15),
-                      prefixIcon: const Icon(Icons.search, color: Color(0xFF6366F1)),
-                      suffixIcon: _isSearchFocused 
-                        ? IconButton(
-                            icon: const Icon(Icons.cancel_rounded, color: Colors.grey),
-                            onPressed: () {
-                              _searchController.clear();
-                              _searchFocusNode.unfocus();
-                              setState(() {
-                                searchQuery = "";
-                                _isSearchFocused = false;
-                              });
-                            },
-                          )
-                        : null,
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 15),
-                    ),
-                  ),
+                child: AnimatedSearchField(
+                  controller: _searchController,
+                  focusNode: _searchFocusNode,
+                  isFocused: _isSearchFocused,
+                  hintText: 'Search by name or phone...',
+                  onChanged: (value) => setState(() => searchQuery = value),
+                  onClear: () {
+                    _searchController.clear();
+                    _searchFocusNode.unfocus();
+                    setState(() {
+                      searchQuery = '';
+                    });
+                  },
                 ),
               ),
 

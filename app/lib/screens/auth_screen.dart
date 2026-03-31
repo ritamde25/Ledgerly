@@ -4,15 +4,13 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/auth/auth_provider.dart';
 
 class AuthScreen extends ConsumerStatefulWidget {
-  const AuthScreen({Key? key, this.showSkip = false}) : super(key: key);
-
-  final bool showSkip;
+  const AuthScreen({super.key});
 
   @override
-  _AuthScreenState createState() => _AuthScreenState();
+  AuthScreenState createState() => AuthScreenState();
 }
 
-class _AuthScreenState extends ConsumerState<AuthScreen> {
+class AuthScreenState extends ConsumerState<AuthScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _storeNameController = TextEditingController();

@@ -26,39 +26,16 @@ class AppDatabase extends _$AppDatabase {
   int get schemaVersion => 4;
 
   @override
-  MigrationStrategy get migration {
-    return MigrationStrategy(
-      onCreate: (m) async {
-        await m.createAll();
-      },
-      onUpgrade: (m, from, to) async {
-        if (from < 2) {
-          await m.createTable(baseInventoryItems);
-          await m.addColumn(inventoryItems, inventoryItems.baseItemId);
-          await m.addColumn(inventoryItems, inventoryItems.isOverride);
-          await m.addColumn(inventoryItems, inventoryItems.baseQuantity);
-          await m.addColumn(inventoryItems, inventoryItems.quantityMetric);
-        }
-        if (from < 3) {
-          await m.addColumn(baseInventoryItems, baseInventoryItems.updatedAt);
-        }
-        if (from < 4) {
-          // Migration: Change customer and transaction IDs from INT to TEXT
-          // Drop old tables and recreate with new schema
-          await m.deleteTable('transactions');
-          await m.deleteTable('customers');
-          await m.createTable(customers);
-          await m.createTable(transactions);
-        }
-      },
-    );
-  }
+  MigrationStrategy get migration => MigrationStrategy(
+    onCreate: (m) async => m.createAll(),
+  );
 }
 
 LazyDatabase _openConnection() {
   return LazyDatabase(() async {
     final dbFolder = await getApplicationDocumentsDirectory();
     final file = File(p.join(dbFolder.path, 'db.sqlite'));
+    // print("The size of the db is - ${(await file.length()) / (1024 * 1024)} MB");
     return NativeDatabase.createInBackground(file);
   });
 }

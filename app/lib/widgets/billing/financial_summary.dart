@@ -4,7 +4,7 @@ class FinancialSummary extends StatelessWidget {
   final double subtotal;
   final double discountValue;
   final double totalAmount;
-  final VoidCallback onEditDiscount;
+  final VoidCallback? onEditDiscount;
 
   const FinancialSummary({
     Key? key,
