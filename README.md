@@ -105,6 +105,12 @@ The YOLO model used in Smart Billing Scan was trained using the Grocery Items da
 
 ---
 
+## Inspiration
+
+This project was inspired by [ShopEZ](https://github.com/SoahamSur/ShopEZ), a hackathon project that I was part of which explored intelligent retail workflows and billing systems.
+
+---
+
 ## Repository layout
 
 - `app/` — Flutter mobile app (main project)

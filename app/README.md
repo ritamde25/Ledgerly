@@ -61,6 +61,8 @@ To use it:
 - Start the backend from `../backend` (see [../backend/README.md](../backend/README.md)).
 - Set `FLASK_API_URL` in `.env`.
 
+You do **not** need to provide model weights for this flow. The backend auto-uses the project's Hugging Face model unless you intentionally provide a local `MODEL_PATH` override.
+
 Emulator URL reminders:
 - Android emulator: `http://10.0.2.2:5000`
 - iOS simulator: `http://localhost:5000`

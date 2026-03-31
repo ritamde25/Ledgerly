@@ -86,6 +86,9 @@ By default it listens on `0.0.0.0:5000`.
 
 ## Model configuration
 
+You do **not** need to provide your own model to run this backend.
+By default, it automatically downloads and uses the project's Hugging Face model.
+
 Create a local env file (gitignored):
 
 - Windows PowerShell:
@@ -102,26 +105,25 @@ cp .env.example .env
 
 The backend looks for a `backend/.env` file and loads these variables:
 
-- `APP_ENV` — set to `development` to use local weights
 - `PORT` — server port (default `5000`)
-- `MODEL_PATH` — local weights path (default `best.pt`)
+- `MODEL_PATH` — optional local weights path override (default `best.pt`)
 
-Hugging Face download mode:
-- `HF_MODEL_URL` — direct URL to the `.pt` file (required in HF mode)
-- `HF_MODEL_FILENAME` — cached filename (default `best.pt`)
-- `HF_MODEL_CACHE_DIR` — cache folder (default `.model_cache`)
+No Hugging Face env setup is required.
 
 ### Important behavior
 
-- If `backend/.env` is missing **or** `APP_ENV` is not `development`, the backend switches to **Hugging Face mode** and requires `HF_MODEL_URL`.
-- In HF mode, weights are downloaded once and cached under `HF_MODEL_CACHE_DIR`.
+1. The backend checks `MODEL_PATH` first.
+2. If that file exists, it is used directly.
+3. If not, it downloads and uses the built-in Hugging Face model URL.
+4. Downloaded weights are cached in `backend/.model_cache/best.pt` and reused.
 
 ### About `best.pt`
 
 The weights file `backend/best.pt` is intentionally **gitignored**. For local inference you can:
 
 1. Place your weights at `backend/best.pt`
-2. Ensure `APP_ENV=development` in `backend/.env`
+2. Or set `MODEL_PATH` in `backend/.env` to another local file path
+3. Start the server normally (`python app.py`)
 
 ---
 

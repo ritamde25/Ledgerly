@@ -12,7 +12,9 @@ app = Flask(__name__)
 
 BASE_DIR = Path(__file__).resolve().parent
 ENV_PATH = BASE_DIR / ".env"
-ENV_FILE_EXISTS = ENV_PATH.exists()
+HF_MODEL_URL = "https://huggingface.co/ritamde25/grocery-v2/resolve/main/best.pt"
+HF_MODEL_CACHE_DIR = BASE_DIR / ".model_cache"
+HF_MODEL_FILENAME = "best.pt"
 
 
 def load_dotenv(env_path: Path) -> None:
@@ -30,13 +32,6 @@ def load_dotenv(env_path: Path) -> None:
             os.environ[key] = value
 
 
-def is_production() -> bool:
-    env = (
-        os.getenv("APP_ENV") or ""
-    )
-    return env.lower() != "development"
-
-
 def download_model(url: str, destination: Path) -> None:
     destination.parent.mkdir(parents=True, exist_ok=True)
     request = urllib.request.Request(url)
@@ -46,22 +41,14 @@ def download_model(url: str, destination: Path) -> None:
 
 
 def resolve_model_path() -> Path:
-    # If .env is missing, default to Hugging Face mode.
-    use_huggingface = (not ENV_FILE_EXISTS) or is_production()
     local_model_path = BASE_DIR / os.getenv("MODEL_PATH", "best.pt")
-    if not use_huggingface:
+    if local_model_path.exists():
         return local_model_path
 
-    hf_model_url = os.getenv("HF_MODEL_URL", "").strip()
-    hf_model_filename = os.getenv("HF_MODEL_FILENAME", "best.pt").strip() or "best.pt"
-    hf_cache_dir = BASE_DIR / os.getenv("HF_MODEL_CACHE_DIR", ".model_cache")
-    cached_model_path = hf_cache_dir / hf_model_filename
-
-    if not hf_model_url:
-        raise RuntimeError("HF_MODEL_URL is required when using Hugging Face model")
+    cached_model_path = HF_MODEL_CACHE_DIR / HF_MODEL_FILENAME
 
     if not cached_model_path.exists():
-        download_model(hf_model_url, cached_model_path)
+        download_model(HF_MODEL_URL, cached_model_path)
 
     return cached_model_path
 
@@ -117,7 +104,8 @@ def predict():
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "5000"))
-    app.run(host="0.0.0.0", port=port, debug=not is_production())
+    debug = os.getenv("FLASK_DEBUG", "0") == "1"
+    app.run(host="0.0.0.0", port=port, debug=debug)
 
 
 
