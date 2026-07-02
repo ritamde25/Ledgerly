@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../core/db/drift_database.dart';
 import '../core/db/daos/transactions_dao.dart';
 import '../core/db/models/item.dart';
 import '../core/db/providers.dart';

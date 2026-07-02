@@ -52,13 +52,13 @@ class CsvTransferService {
 
     return _shareCsvFile(
       filePrefix: 'customers',
-      csvContent: const ListToCsvConverter().convert(rows),
+      csvContent: const CsvEncoder().convert(rows),
     );
   }
 
   Future<CsvImportResult> importCustomersFromCsv() async {
     final csvData = await _pickCsvContent();
-    final parsed = const CsvToListConverter(shouldParseNumbers: false).convert(csvData);
+    final parsed = const CsvDecoder(dynamicTyping: false).convert(csvData);
     if (parsed.isEmpty) {
       return const CsvImportResult(inserted: 0, updated: 0, skipped: 0, failed: 0);
     }
@@ -155,13 +155,13 @@ class CsvTransferService {
 
     return _shareCsvFile(
       filePrefix: 'transactions',
-      csvContent: const ListToCsvConverter().convert(rows),
+      csvContent: const CsvEncoder().convert(rows),
     );
   }
 
   Future<CsvImportResult> importTransactionsFromCsv() async {
     final csvData = await _pickCsvContent();
-    final parsed = const CsvToListConverter(shouldParseNumbers: false).convert(csvData);
+    final parsed = const CsvDecoder(dynamicTyping: false).convert(csvData);
     if (parsed.isEmpty) {
       return const CsvImportResult(inserted: 0, updated: 0, skipped: 0, failed: 0);
     }
@@ -284,13 +284,13 @@ class CsvTransferService {
 
     return _shareCsvFile(
       filePrefix: 'inventory',
-      csvContent: const ListToCsvConverter().convert(rows),
+      csvContent: const CsvEncoder().convert(rows),
     );
   }
 
   Future<CsvImportResult> importInventoryFromCsv() async {
     final csvData = await _pickCsvContent();
-    final parsed = const CsvToListConverter(shouldParseNumbers: false).convert(csvData);
+    final parsed = const CsvDecoder(dynamicTyping: false).convert(csvData);
     if (parsed.isEmpty) {
       return const CsvImportResult(inserted: 0, updated: 0, skipped: 0, failed: 0);
     }
@@ -478,7 +478,7 @@ class CsvTransferService {
   }
 
   Future<String> _pickCsvContent() async {
-    final result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['csv'],
     );
@@ -499,7 +499,7 @@ class CsvTransferService {
     final file = File(filePath);
     await file.writeAsString(csvContent);
 
-    await Share.shareXFiles([XFile(filePath)], text: 'Exported $filePrefix CSV');
+    await SharePlus.instance.share(ShareParams(files: [XFile(filePath)], text: 'Exported $filePrefix CSV'));
     return fileName;
   }
 

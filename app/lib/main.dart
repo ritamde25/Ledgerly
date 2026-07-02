@@ -15,7 +15,7 @@ Future<void> main() async {
   // Initialize Supabase with credentials from .env
   await Supabase.initialize(
     url: EnvConfig.instance.supabaseUrl,
-    anonKey: EnvConfig.instance.supabaseAnonKey,
+    publishableKey: EnvConfig.instance.supabaseAnonKey,
   );
 
   runApp(

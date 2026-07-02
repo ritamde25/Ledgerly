@@ -5,7 +5,6 @@ import 'package:uuid/uuid.dart';
 import '../../core/db/providers.dart';
 import '../../core/db/drift_database.dart';
 import '../../core/auth/auth_provider.dart';
-import '../../services/sync_service.dart';
 
 class RecordPaymentDialog {
   static void show(BuildContext context, WidgetRef ref, Customer customer) {

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
-import 'package:drift/drift.dart' as drift;
 import '../../core/db/providers.dart';
 import '../../core/db/drift_database.dart';
 

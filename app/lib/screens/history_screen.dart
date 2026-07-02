@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../core/auth/auth_provider.dart';
 import '../core/db/providers.dart';
-import '../core/db/drift_database.dart';
 import '../core/utils/csv_transfer_service.dart';
 import '../widgets/common/animated_search_field.dart';
 import '../widgets/transaction_card.dart';

@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:drift/drift.dart';
-import 'customers_table.dart';
 import '../models/item.dart';
 
 class Transactions extends Table {

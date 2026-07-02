@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/db/drift_database.dart';
 import '../../core/db/providers.dart';
-import '../popups/add_customer_dialog.dart';
 
 class CustomerSelector extends ConsumerWidget {
   final String? selectedCustomerId;
